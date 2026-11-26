@@ -1,0 +1,65 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    color-scheme: dark;
+    --font-sans: 'Noto Sans TC', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+
+  html,
+  body {
+    font-family: var(--font-sans);
+    background-color: #090C12;
+    color: #F1F5F9;
+    overflow-x: hidden;
+  }
+}
+
+.font-mono-bbs {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Subtle CRT / BBS terminal scanline texture at ultra-low opacity */
+.bbs-scanlines {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.015) 0px,
+    rgba(255, 255, 255, 0.015) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+}
+
+/* Custom thin BBS scrollbar */
+.bbs-scroll::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.bbs-scroll::-webkit-scrollbar-track {
+  background: #0B101A;
+}
+
+.bbs-scroll::-webkit-scrollbar-thumb {
+  background: #243044;
+}
+
+.bbs-scroll::-webkit-scrollbar-thumb:hover {
+  background: #3B4E6B;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

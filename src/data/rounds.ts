@@ -1,0 +1,1688 @@
+import { FactionId, RoundEvent } from '../types/game';
+import { PERSONAL_ROUND_OVERRIDES } from './personalEvents';
+
+export const CAMPAIGN_ROUNDS: RoundEvent[] = [
+  {
+    round: 1,
+    dateLabel: '2027.01 上',
+    boardName: '[Gossiping] 脆上開戰：萊豬與重慶南路122號',
+    title: '開春第一戰：脆文「萊豬外交」對決重慶南路一段122號',
+    situationBrief:
+      '2027 年開春，民進黨在 Threads 全面鋪開「台美貿易大勝利」圖卡，藍營基層痛批進口萊豬與食安雙標。你在脆與 PTT 政黑版同時發起第一輪政治表態。',
+    ccpNotice: '國台辦冷眼觀望國民黨新共主路線，福建海警在金廈海域保持常態巡航。',
+    japanNotice: '日本外務省與東京智庫評估 2028 台灣大選前哨戰，關注在野陣營對美日貿易態度。',
+    rivalPost: {
+      platform: 'Threads 脆',
+      authorName: '賴清德',
+      authorRole: '現任總統 · 民進黨',
+      authorHandle: '@williamlai_tw',
+      portraitKey: 'lai',
+      headline: '台灣走在正確的道路上！與民主陣營並肩，不要回到過去鎖進一中。',
+      body: '「台美經貿標準與國際接軌，請在野黨停止用『萊豬』標籤進行政治操作，不要拖累台灣產業走向世界！」',
+      likesLabel: '4.2萬愛心 · 8,900則脆友筆戰',
+    },
+    choices: [
+      {
+        id: 'r1_hardline',
+        toneLabel: '火力全開',
+        label: '直接嗆爆「萊豬治國」：請執政黨高官先吃滿一年再說！',
+        speechText:
+          '「少在脆上發精修圖卡洗腦！把國人健康拿去換外交空白支票，這就是民進黨的傲慢！2028 我們必將奪回重慶南路一段122號！」',
+        hint: '北中與農業縣市選票上升，脆上正反聲量劇增。',
+        statDelta: { unity: 5, momentum: 10, funds: 4, ccpTension: 2, japanPosture: -4 },
+        swing: { north: 0.4, central: 0.8, south: 0.3, east: 0.5, islands: 0.4, dppShift: -0.5 },
+        setFlags: ['anti_laizhu_hawk'],
+        pushReactions: [
+          { type: '推', author: 'pork_king', text: '幹得好！脆上一堆側翼看到萊豬就跳腳笑死' },
+          { type: '噓', author: 'taipei_green', text: '還在打2021公投題喔？國際標準不懂嗎' },
+        ],
+        mediaReaction: '政論節目連夜重播你的嗆辣金句，「萊豬治國」衝上熱搜第一。',
+      },
+      {
+        id: 'r1_pragmatic',
+        toneLabel: '民生務實',
+        label: '端出「透明標章＋地方經濟」方案，訴求不意識形態治國',
+        speechText:
+          '「我們歡迎國際貿易，但政府必須給媽媽們最嚴格的產地標示。與其整天在脆上吵架，不如把便當價格壓下來！」',
+        hint: '中間與女性選民穩定加分，深藍微嫌不夠辣。',
+        statDelta: { unity: 2, momentum: 4, funds: 5, ccpTension: -2, japanPosture: 4 },
+        swing: { north: 0.6, central: 0.7, south: 0.2, east: 0.2, tppShift: -0.4 },
+        pushReactions: [
+          { type: '推', author: 'taichung_mom', text: '這樣講比較像要執政的樣子，務實推' },
+          { type: '→', author: 'deepblue_1949', text: '對民進黨不用這麼客氣吧' },
+        ],
+        mediaReaction: '都會中產選民給予正面評價，戰鬥藍社群則嫌「不夠解氣」。',
+      },
+      {
+        id: 'r1_steak_diplomacy',
+        toneLabel: '美食奇招',
+        label: '直接揪美國商會吃「台灣滷肉飯配美牛」：把食安戰變吃播！',
+        speechText:
+          '「誰說關心食安就反美？我現場請美方朋友吃滷肉飯配牛排，證明我們既挺國產豬農又懂國際經貿！」',
+        hint: '美日好感大增且吸收科技票，深藍群組卻一時看傻。',
+        statDelta: { unity: -4, momentum: 9, funds: 7, ccpTension: 3, japanPosture: 10 },
+        swing: { north: 0.9, central: 0.5, islands: -0.8, specificCounties: { 新竹市: 1.4, 台北市: 1.1 } },
+        setFlags: ['steak_diplomacy'],
+        pushReactions: [
+          { type: '推', author: 'neihu_pm', text: '這招高明，直接把抗美標籤撕掉' },
+          { type: '噓', author: 'kinmen_vet', text: '到底反不反萊豬啊搞得我好亂' },
+        ],
+        mediaReaction: '外媒駐台記者大幅報導這場餐桌外交，PTT 深夜宵夜文暴增。',
+      },
+    ],
+  },
+  {
+    round: 2,
+    dateLabel: '2027.01 下',
+    boardName: '[Baseball / Gossiping] 大巨蛋漏水變威尼斯',
+    title: '台北大巨蛋又漏水！脆友狂 P 圖「室內划龍舟開票」',
+    situationBrief:
+      '寒流鋒面過境台北，大巨蛋看台區再次出現「室內小瀑布」，綠營議員趁機狂洗圖卡嘲諷藍營執政品質，PTT 棒球版與八卦版全線失守。',
+    ccpNotice: '大陸網民轉貼台北巨蛋漏水影片嘲諷「台灣基建不如二線城市」。',
+    japanNotice: '日本東京巨蛋營運顧問團禮貌性發函詢問需不需要防水工程協助。',
+    rivalPost: {
+      platform: 'Threads 脆',
+      authorName: '蕭美琴',
+      authorRole: '現任副總統 · 民進黨',
+      authorHandle: '@bikhim_tw',
+      portraitKey: 'hsiao',
+      headline: '公共工程的品質與安全是對市民最基本的承諾，不能每次下雨就靠口水遮羞！',
+      body: '「一座國際級場館屢屢上演室內下雨奇觀，這就是國民黨最引以為傲的執政能力嗎？」',
+      likesLabel: '3.4萬愛心 · 5,200則嘲諷轉發',
+    },
+    choices: [
+      {
+        id: 'r2_venice_meme',
+        toneLabel: '地獄自嘲',
+        label: '直接承認「這是亞洲唯一室內威尼斯水都體驗」，反酸綠營光電板也會漂！',
+        speechText:
+          '「我們承認缺失立刻罰款重修！但至少巨蛋在屋頂漏水、不像台南七股滿地魚電共生光電板連魚都沒地方游！」',
+        hint: '成功轉移焦點並爆紅，但建築師公會集體翻白眼。',
+        statDelta: { unity: 2, momentum: 13, funds: -2, ccpTension: 0, japanPosture: 0 },
+        swing: { north: 0.4, central: 0.6, south: 0.8, dppShift: -0.5 },
+        setFlags: ['venice_dome_meme'],
+        pushReactions: [
+          { type: '推', author: 'taipei_fan', text: '靠北室內威尼斯笑死我，順便酸七股光電太狠了' },
+          { type: '噓', author: 'arch_tw', text: '防水層趕快修一修啦還講幹話' },
+        ],
+        mediaReaction: '「室內威尼斯」迷因橫掃全網，成功把防守戰打成混戰。',
+      },
+      {
+        id: 'r2_chiang_fix',
+        toneLabel: '首都重罰',
+        label: '強硬開罰遠雄並帶工程隊現場直播抓漏，展現鐵腕治理',
+        speechText:
+          '「錯就是錯，該罰就罰到底！今天我親自盯場館排水測試，不像執政黨出事永遠找廠商背鍋！」',
+        hint: '雙北與中間選民高度肯定，聲勢穩步回升。',
+        statDelta: { unity: 6, momentum: 6, funds: 4, ccpTension: 0, japanPosture: 3 },
+        swing: { north: 1.0, central: 0.4, specificCounties: { 台北市: 1.5, 新北市: 0.8 } },
+        pushReactions: [
+          { type: '推', author: 'songshan_bro', text: '敢認錯開罰就給推，比硬拗好一百倍' },
+        ],
+        mediaReaction: '台北市民好感度明顯止跌回穩。',
+      },
+      {
+        id: 'r2_blame_ko',
+        toneLabel: '甩鍋前朝',
+        label: '大喊「這都是柯文哲當年簽的爛約跟停工留下的後遺症！」',
+        speechText:
+          '「誰卡蛋八年、誰簽的零權利金合約？要算帳先找民眾黨算清楚！」',
+        hint: '短暫討好綠藍雙方，卻徹底惹毛白營小草選民。',
+        statDelta: { unity: 3, momentum: 5, funds: 2, ccpTension: 0, japanPosture: 0 },
+        swing: { north: 0.3, central: 0.2, tppShift: 1.1 },
+        setFlags: ['tpp_friction'],
+        pushReactions: [
+          { type: '噓', author: 'kp_grass', text: '又推給阿北？好喔2028藍營自己選' },
+        ],
+        mediaReaction: '民眾黨全黨跳起來反嗆，在野陣營內鬨升溫。',
+      },
+    ],
+  },
+  {
+    round: 3,
+    dateLabel: '2027.02 上',
+    boardName: '[HatePolitics] 元宵總預算大戰與咆哮直播',
+    title: '立院總預算全面卡關：與黃國昌比誰咆哮比較大聲！',
+    situationBrief:
+      '新會期總預算案在立法院爆發肢體與口水衝突。民眾黨團總召黃國昌開直播咆哮要求大砍宣傳費，鄭麗文要求你立刻表態力挺在野聯盟。',
+    ccpNotice: '大陸媒體密集轉播台灣立院衝突畫面，宣稱「島內政治內耗加劇」。',
+    japanNotice: '沖繩縣與日本防衛省關注台灣國防特別預算是否遭到延宕。',
+    rivalPost: {
+      platform: 'PTT 政黑版',
+      authorName: '黃國昌',
+      authorRole: '民眾黨立院總召',
+      authorHandle: 'KuoChang_TPP',
+      portraitKey: 'huang',
+      headline: '[討論] 國會改革跟預算監督沒有模糊空間！國民黨到底敢不敢跟進？',
+      body: '「太離譜了！民進黨編列天價大內宣預算養側翼，我們民眾黨已經提案全數刪除！國民黨不要在關鍵時刻退縮！」',
+      likesLabel: '推: 爆 · 2,400則政黑戰文',
+    },
+    choices: [
+      {
+        id: 'r3_join_tpp',
+        toneLabel: '藍白聯手',
+        label: '全盤力挺在野聯盟大砍宣傳費，與黃國昌同台開直播',
+        speechText:
+          '「人民納稅錢不是民進黨的網軍提款機！在野黨監督天經地義，這筆預算一毛都不該給側翼！」',
+        hint: '在野聲量與藍白默契上升，美日微幅關切國防預算。',
+        statDelta: { unity: 5, momentum: 9, funds: 3, ccpTension: 2, japanPosture: -5 },
+        swing: { north: 0.6, central: 0.7, south: 0.2, specificCounties: { 新竹市: 1.0, 新竹縣: 0.9 } },
+        setFlags: ['blue_white_aligned'],
+        pushReactions: [
+          { type: '推', author: 'tpp_fan88', text: '這樣才對！在野不團結等著被綠營各個擊破' },
+        ],
+        mediaReaction: '立院直播觀看破 12 萬人，藍白支持者罕見互道加油。',
+      },
+      {
+        id: 'r3_roar_battle',
+        toneLabel: '比昌更大聲',
+        label: '直接搬重低音大聲公進議場：喊「太離譜了」比黃國昌高 15 分貝！',
+        speechText:
+          '「太——離——譜——了！這筆宣傳費通通退稅還給全民每人多發一千塊吃雞排！誰反對誰就是人民公敵！」',
+        hint: '庶民愛翻天、網路爆紅，但藍白粉同時傻眼。',
+        statDelta: { unity: -3, momentum: 14, funds: -4, ccpTension: 0, japanPosture: -2 },
+        swing: { central: 0.9, south: 1.0, north: 0.2, specificCounties: { 高雄市: 1.2, 彰化縣: 1.1 } },
+        setFlags: ['roar_duel_meme'],
+        pushReactions: [
+          { type: '推', author: 'kaohsiung_bro', text: '笑死 音響都快破音了但發一千我推爆' },
+        ],
+        mediaReaction: '兩黨候選人對吼混剪影片成為全網鬼畜神曲第一名。',
+      },
+      {
+        id: 'r3_kmt_lead',
+        toneLabel: '大黨主導',
+        label: '要求白營尊重國會最大黨，「地方建設與軍警福利一毛不能少！」',
+        speechText:
+          '「監督預算要精準務實，請友黨尊重國會最大黨的節奏！」',
+        hint: '黨內團結與地方大讚，但白營支持者微怒。',
+        statDelta: { unity: 9, momentum: 2, funds: 6, ccpTension: 0, japanPosture: 4 },
+        swing: { north: 0.3, central: 0.6, east: 0.9, tppShift: 0.8 },
+        pushReactions: [
+          { type: '推', author: 'county_chief', text: '地方補助款保住了，支持正藍軍主導！' },
+        ],
+        mediaReaction: '地方縣市長表態力挺你，黃國昌則在節目上冷笑三分半鐘。',
+      },
+    ],
+  },
+  {
+    round: 4,
+    dateLabel: '2027.02 下',
+    boardName: '[History / HatePolitics] 課綱與國父遺像大亂戰',
+    title: '二二八連假歷史戰：高喊「三民主義萬歲」還是談和解共生？',
+    situationBrief:
+      '連假期間歷史課綱與轉型正義再度引爆脆上血戰，深藍要求你重申「三民主義統一中國與國父正統」，年輕幕僚則拜託你不要掉進歷史陷阱。',
+    ccpNotice: '北京舉辦紀念活動高調搶奪孫中山遺產話語權，統戰意味濃厚。',
+    japanNotice: '國際人權組織與日媒關注台灣歷史記憶與世代認同分歧。',
+    rivalPost: {
+      platform: 'Threads 脆',
+      authorName: '賴清德',
+      authorRole: '現任總統 · 民進黨',
+      authorHandle: '@williamlai_tw',
+      portraitKey: 'lai',
+      headline: '面對歷史真相是民主深化的必經之路，絕不讓威權復辟！',
+      body: '「請國民黨誠懇面對歷史傷痕，不要再用過去的威權符號企圖蒙蔽年輕世代！」',
+      likesLabel: '5.1萬愛心 · 9,200則筆戰',
+    },
+    choices: [
+      {
+        id: 'r4_sun_yat_sen',
+        toneLabel: '三民主義萬歲',
+        label: '正面硬幹！「沒有孫中山跟三民主義，哪來今天台灣的憲法與民主？」',
+        speechText:
+          '「民進黨享受著中華民國憲法的保護、卻整天拆銅像去中國化！我今天就要在這裡大喊：國民黨萬歲！三民主義萬歲！中華民國萬歲！」',
+        hint: '深藍與軍公教淚流滿面、黨內團結滿溢，年輕族群正反兩極。',
+        statDelta: { unity: 12, momentum: 10, funds: 8, ccpTension: -2, japanPosture: -3 },
+        swing: { north: 0.5, central: 0.6, east: 1.4, islands: 1.5, south: -0.3 },
+        setFlags: ['three_principles_zealot'],
+        pushReactions: [
+          { type: '推', author: 'veteran_roc', text: '三民主義萬歲！！終於有人敢大聲喊出來了！' },
+          { type: '噓', author: 'campus_tw', text: '都2027年了還在背國父遺囑喔' },
+        ],
+        mediaReaction: '你高喊「三民主義萬歲」的片段在深藍長輩圖群組轉發超過十萬次。',
+      },
+      {
+        id: 'r4_reconcile',
+        toneLabel: '和解前行',
+        label: '向受難家屬致意同時呼籲「停止每年把歷史當提款機」',
+        speechText:
+          '「歷史的傷痛應該撫平，而不是每年選舉拿來撕裂下一代的工具！」',
+        hint: '中間與淺綠厭戰票微幅流入，安全過關。',
+        statDelta: { unity: 2, momentum: 3, funds: 4, ccpTension: 0, japanPosture: 4 },
+        swing: { north: 0.6, central: 0.5, south: 0.3, dppShift: -0.4 },
+        pushReactions: [
+          { type: '推', author: 'neutral_tw', text: '確實，每年都拿出來吵真的夠了' },
+        ],
+        mediaReaction: '媒體評價穩健得體，未讓對手討到便宜。',
+      },
+      {
+        id: 'r4_ma_hand_shake',
+        toneLabel: '前總統特技',
+        label: '【馬英九專屬】親自出席和解儀式並發動「全場握手外交」！',
+        speechText:
+          '「謝謝指教！不論藍綠，今天我都握緊大家的手，一起向前看！」',
+        factionOnly: 'ma',
+        hint: '馬英九專屬：神秘因果律發動！全場對手隔天集體重感冒！',
+        statDelta: { unity: 8, momentum: 14, funds: 6, ccpTension: -4, japanPosture: 2 },
+        swing: { north: 0.9, central: 0.7, islands: 1.6, dppShift: -0.9 },
+        setFlags: ['death_grip_activated'],
+        pushReactions: [
+          { type: '推', author: 'ptt_legend', text: '幹 死亡之握重出江湖！！對方陣營發言人隔天真的失聲了笑死' },
+        ],
+        mediaReaction: 'PTT 驚呼「東方神祕力量再度生效」，對手陣營連忙取消三天公開行程。',
+      },
+    ],
+  },
+  {
+    round: 5,
+    dateLabel: '2027.03 上',
+    boardName: '[Stock / Gossiping] 電價大漲與核電公投',
+    title: '三月電價大漲震撼彈：「用愛發電」還是重啟核一二三四？',
+    situationBrief:
+      '經濟部宣布四月起民生與工業電價全面調漲，台電虧損黑洞引發竹科與中小企業哀號。你在台中與新竹舉辦能源座談痛擊非核神主牌。',
+    ccpNotice: '大陸學者評論台灣能源脆性高，若遭封鎖恐撐不過兩週，引發島內論戰。',
+    japanNotice: '日本經產省代表團訪台了解半導體電力穩定性，呼籲確保基載電力。',
+    rivalPost: {
+      platform: 'Threads 脆',
+      authorName: '蕭美琴',
+      authorRole: '現任副總統 · 民進黨',
+      authorHandle: '@bikhim_tw',
+      portraitKey: 'hsiao',
+      headline: '能源轉型是為了台灣半導體的國際 RE100 競爭力，我們正全力推動再生能源與儲能電網。',
+      body: '「請在野黨不要只會唱衰台灣電網，核廢料處理才是負責任政府必須面對的課題！」',
+      likesLabel: '3.1萬愛心 · 6,400則回覆',
+    },
+    choices: [
+      {
+        id: 'r5_nuclear_allin',
+        toneLabel: '核電重拳',
+        label: '宣布當選百日內推動核二核三延役、核四體檢重啟，凍漲電價！',
+        speechText:
+          '「沒有核電就沒有 AI 台灣！民進黨拿人民的肺跟錢包補光電蟑螂黑洞！2028 我上任立刻讓核電歸隊！」',
+        hint: '北中工商界與竹科票倉大幅暴漲，電力與財源穩定。',
+        statDelta: { unity: 7, momentum: 8, funds: 10, ccpTension: -2, japanPosture: 6 },
+        swing: {
+          north: 0.9,
+          central: 1.1,
+          south: 0.3,
+          specificCounties: { 新竹市: 1.9, 台中市: 1.5, 新北市: -0.3 },
+        },
+        setFlags: ['pro_nuclear'],
+        pushReactions: [
+          { type: '推', author: 'tsmc_shift', text: '竹科人真的受夠跳電跟漲價了，這張投藍' },
+        ],
+        mediaReaction: '工商協進會與科技業私下讚許，台中空氣議題重新奪回主導權。',
+      },
+      {
+        id: 'r5_solar_expose',
+        toneLabel: '揭弊台南',
+        label: '連環爆料「南部綠能光電利益鏈」，直搗賴清德本命區台南！',
+        speechText:
+          '「電價為什麼漲？因為錢都流進特定綠營金主口袋！魚電共生變魚死光光，台南鄉親還要忍多久？」',
+        hint: '南部突破效果佳、脆上討論爆表。',
+        statDelta: { unity: 4, momentum: 11, funds: -3, ccpTension: 0, japanPosture: 0 },
+        swing: { south: 1.5, central: 0.7, specificCounties: { 台南市: 2.1, 高雄市: 1.3 } },
+        setFlags: ['green_energy_expose'],
+        pushReactions: [
+          { type: '推', author: 'tainan_anping', text: '七股光電板多到像海一樣，真的該查！' },
+        ],
+        mediaReaction: '台南與嘉義地方議題瞬間延燒，綠營緊急動員十位立委反制。',
+      },
+      {
+        id: 'r5_love_power_meme',
+        toneLabel: '荒謬反串',
+        label: '發起「全國用愛發電大遊行」號召全民帶手搖發電機上凱道！',
+        speechText:
+          '「既然政府說不缺電，那我們就帶手搖發電機上凱道一起用愛發電，點亮台灣！」',
+        hint: 'PTT 與脆上笑翻天，但企業界質疑藍營玩梗過頭。',
+        statDelta: { unity: -4, momentum: 15, funds: -4, ccpTension: 0, japanPosture: -4 },
+        swing: { north: 0.3, central: -0.2, south: 0.3, tppShift: -0.6 },
+        setFlags: ['love_power_meme'],
+        pushReactions: [
+          { type: '推', author: 'ptt_troll', text: '靠北帶手搖發電機上凱道我一定去朝聖' },
+        ],
+        mediaReaction: '外媒誤以為台灣舉辦環保嘉年華，企業大老搖頭嘆氣。',
+      },
+    ],
+  },
+  {
+    round: 6,
+    dateLabel: '2027.03 下',
+    boardName: '[Military / Secret] 國光計畫絕密檔案外流事件！',
+    title: '【超爆氣神展開】媒體爆出藍營智庫「重啟國光計畫」模擬兵推簡報！',
+    situationBrief:
+      '某週刊突然刊出外流文件，指稱藍營內部鷹派與退將私下重繪《2028 重啟國光計畫：福建登陸反攻示意圖》！全網瞬間炸鍋，連華府與北京都緊急致電詢問你是不是瘋了！',
+    ccpNotice: '東部戰區極度錯愕，懷疑台灣內部是不是真的有人想逆向渡海登陸廈門！',
+    japanNotice: '日本防衛省研判純屬台灣選舉惡搞，但仍把此檔案列為東亞年度奇聞。',
+    rivalPost: {
+      platform: 'PTT 八卦版',
+      authorName: '賴清德',
+      authorRole: '總統府錯愕回應',
+      authorHandle: '@williamlai_tw',
+      portraitKey: 'lai',
+      headline: '[新聞] 針對在野陣營傳出「重啟國光計畫」兵推，總統府呼籲保持理性勿陷入歷史幻想！',
+      body: '「台灣不需要反攻大陸的戰爭幻想，請在野黨說明清楚這份離譜的登陸計畫到底是誰畫的！」',
+      likesLabel: '6.8萬愛心 · 全世界看呆',
+    },
+    choices: [
+      {
+        id: 'r6_guoguang_allin',
+        toneLabel: '重啟國光！',
+        label: '幹！老子承認了！「既然你們怕共產黨怕成這樣，國民黨直接重啟國光反攻大陸！」',
+        speechText:
+          '「民進黨只敢抗中保台喊爽的，我們正統中華民國派直接開大絕！重啟國光計畫！三民主義統一中國！讓福建沿海也感受一下言論自由的威力！」',
+        hint: '全宇宙級超展開！聲量衝破天際、深藍跪地痛哭，但北京與美日集體警報大作！',
+        statDelta: { unity: 8, momentum: 24, funds: -6, ccpTension: 22, japanPosture: -6 },
+        swing: {
+          north: 0.4,
+          central: 0.5,
+          east: 1.8,
+          islands: 2.2,
+          south: -0.6,
+          dppShift: -0.8,
+        },
+        setFlags: ['guoguang_restarted', 'three_principles_zealot'],
+        pushReactions: [
+          { type: '推', author: 'ptt_god', text: '幹哈哈哈哈哈 重啟國光計畫！！綠營抗中保台直接變小兒科了' },
+          { type: '推', author: 'roc_1949', text: '一年準備、二年反攻、三年掃蕩、五年成功！！（哭）' },
+          { type: '噓', author: 'pentagon_watch', text: '？？？我們原本要防的是西岸打過來不是東岸打過去欸' },
+        ],
+        mediaReaction: 'BBC 與 CNN 急忙翻譯「Project National Glory」，國台辦發言人一度語塞三分鐘。',
+      },
+      {
+        id: 'r6_guoguang_laugh',
+        toneLabel: '幽默闢謠',
+        label: '笑稱「那是幕僚拿《鋼鐵雄心》遊戲地圖改的惡搞圖啦！別這麼緊張」',
+        speechText:
+          '「連遊戲模組都分不清楚還當國安高層？我們要反攻的是高房價與高電價，不是去打福建好嗎！」',
+        hint: '年輕玩家大笑拍手、成功化解危機且小幅吸票。',
+        statDelta: { unity: 2, momentum: 9, funds: 4, ccpTension: -6, japanPosture: 5 },
+        swing: { north: 0.8, central: 0.7, south: 0.3, tppShift: -0.7 },
+        pushReactions: [
+          { type: '推', author: 'hoi4_player', text: '笑死 鋼鐵雄心玩家認證，國光線走起來' },
+        ],
+        mediaReaction: '遊戲圈與年輕族群大讚反應機智，台海緊張順利降溫。',
+      },
+      {
+        id: 'r6_guoguang_blame',
+        toneLabel: '甩鍋側翼',
+        label: '嚴正指控這是「綠營網軍偽造黑函意圖抹紅反殺」，提告到底！',
+        speechText:
+          '「全黨從來沒有這種文件，這是執政黨自導自演的低劣假新聞！」',
+        hint: '穩固基本盤與糧草，安全無風險。',
+        statDelta: { unity: 5, momentum: 2, funds: 5, ccpTension: -4, japanPosture: 2 },
+        swing: { north: 0.3, central: 0.4, east: 0.4 },
+        pushReactions: [
+          { type: '→', author: 'media_desk', text: '四平八穩的標準政治公關回應' },
+        ],
+        mediaReaction: '新聞熱度兩天後迅速平息。',
+      },
+    ],
+  },
+  {
+    round: 7,
+    dateLabel: '2027.04 上',
+    boardName: '[CrossStrait] 福建實彈演訓警報與台海中線對峙',
+    title: '台海中線危機：東部戰區無預警演訓，金馬漁船全面戒備',
+    situationBrief:
+      '解放軍東部戰區在福建平潭與廈門外海展開實彈射擊演訓，金門與連江漁船被迫返港。與那國島日本自衛隊雷達站全面升為高戒備，台股開盤重挫。',
+    ccpNotice: '東部戰區發布「海峽雷霆」軍演畫面，警告「勿玩火自焚」。',
+    japanNotice: '日本防衛省緊急通報：與那國島監測到多架次運-9 與水面艦編隊。',
+    rivalPost: {
+      platform: '緊急軍情電報',
+      authorName: '賴清德',
+      authorRole: '國安高層會議 · 總統府',
+      authorHandle: '@presidential_office',
+      portraitKey: 'lai',
+      headline: '國軍全程掌握海空動態，請朝野停止對北京釋放錯誤訊號，團結抗中保台！',
+      body: '「中共威脅正是檢驗總統候選人忠誠度的時刻！此時主張對話就是向威權低頭！」',
+      likesLabel: '5.8萬轉發 · 全台高度警戒',
+    },
+    choices: [
+      {
+        id: 'r7_constitutional_balance',
+        toneLabel: '憲法雙軌',
+        label: '譴責軍演同時堅持「依憲法對話、備戰而不求戰」',
+        speechText:
+          '「我們強烈反對中共武力威嚇！但政府不能只會喊口號切斷溝通管道！國防要強、對話也要開！」',
+        hint: '壓低台海危機、穩住美日與中間選民。',
+        statDelta: { unity: 4, momentum: 4, funds: 5, ccpTension: -10, japanPosture: 8 },
+        swing: { north: 0.8, central: 0.7, south: 0.3, islands: 0.6, dppShift: -0.4 },
+        pushReactions: [
+          { type: '推', author: 'middle_voter', text: '又反軍演又要對話，台灣人最想要這種穩定' },
+        ],
+        mediaReaction: '台股午後跌幅收斂，東京與華府智庫評價你的談話具穩定性。',
+      },
+      {
+        id: 'r7_peace_delegation',
+        toneLabel: '急派密使',
+        label: '高調宣布派團赴福州談和平框架，「和平比軍購便宜！」',
+        speechText:
+          '「只要重啟九二共識與和平談判，金廈立刻通橋、觀光客立刻回來！國民黨帶大家發大財！」',
+        hint: '金馬爆紅，但本島恐遭抹紅且美日警鈴大響！',
+        statDelta: { unity: -5, momentum: -4, funds: 7, ccpTension: -18, japanPosture: -14 },
+        swing: {
+          north: -1.3,
+          central: -0.8,
+          south: -1.4,
+          east: 0.7,
+          islands: 3.5,
+          specificCounties: { 金門縣: 4.5, 連江縣: 4.0 },
+        },
+        setFlags: ['peace_pact_push'],
+        pushReactions: [
+          { type: '噓', author: 'taipei_youth', text: '軍機在頭上飛還喊和平協議？直接送票給賴喔' },
+          { type: '推', author: 'kinmen_boss', text: '金門快撐不住了，支持趕快談！' },
+        ],
+        mediaReaction: '本島脆友激烈反彈，但金門、馬祖地方社團大力聲援。',
+      },
+      {
+        id: 'r7_hard_deterrence',
+        toneLabel: '反共保台',
+        label: '怒嗆北京：「中華民國國軍寸土不讓，別幫民進黨助選！」',
+        speechText:
+          '「北京聽清楚！每次你們派軍機繞台，就是替賴清德催出十萬張選票！我們捍衛中華民國寸土不讓！」',
+        hint: '本島與美日狂讚，但台海緊張度急遽上升！',
+        statDelta: { unity: -6, momentum: 11, funds: 4, ccpTension: 16, japanPosture: 14 },
+        swing: { north: 1.3, central: 1.0, south: 1.2, islands: -2.0 },
+        setFlags: ['anti_ccp_hawk'],
+        pushReactions: [
+          { type: '推', author: 'young_blue', text: '早該這樣講了！國民黨本來就是反共保台起家！' },
+        ],
+        mediaReaction: '日本產經新聞給予正面篇幅，國台辦深夜發稿嚴厲點名批評。',
+      },
+    ],
+  },
+  {
+    round: 8,
+    dateLabel: '2027.04 下',
+    boardName: '[HongKong / EastAsia] 香港連登熱議與港人移民茶餐廳之戰',
+    title: '【香港再光事件】港人團體請願＋脆友突發奇想「香港併入台灣特別市」！',
+    situationBrief:
+      '月底台北西門町與中山區港式茶餐廳聚會引發熱烈政治話題，香港流亡社群在脆上發起「懷念青天白日與獅子山精神」連署，激進網民甚至惡搞喊出「2028 推動香港再光！」',
+    ccpNotice: '駐港國安與北京對台部門高度緊張，嚴厲警告台灣政治人物勿碰香港紅線！',
+    japanNotice: '日本與英國僑民組織聲援港人文化保存，關注藍營如何回應香港議題。',
+    rivalPost: {
+      platform: '香港連登熱議',
+      authorName: '賴清德',
+      authorRole: '民進黨香港政策檢視',
+      authorHandle: '@williamlai_tw',
+      portraitKey: 'lai',
+      headline: '台灣永遠站在自由民主香港朋友這邊！反觀國民黨當年面對反送中卻曖昧退縮！',
+      body: '「當年說今日香港明日台灣的政黨，如今還敢對香港自由民主公開表態嗎？」',
+      likesLabel: '4.7萬愛心 · 港台社群高度關注',
+    },
+    choices: [
+      {
+        id: 'r8_hk_restoration',
+        toneLabel: '香港再光！',
+        label: '喝著絲襪奶茶拍桌怒吼：「三民主義萬歲！讓香港再光、維多利亞港重掛青天白日！」',
+        speechText:
+          '「我們國民黨當年就是從香港、廣州革命起家的！自由民主不是民進黨專利，我誓言香港再光！讓獅子山下重新唱起青天白日的歌！」',
+        hint: '港台脆友與連登集體高潮、年輕與本島聲量狂飆！但北京直接暴跳如雷！',
+        statDelta: { unity: 3, momentum: 20, funds: -4, ccpTension: 24, japanPosture: 14 },
+        swing: {
+          north: 1.4,
+          central: 0.9,
+          south: 1.1,
+          islands: -1.8,
+          dppShift: -1.2,
+          specificCounties: { 台北市: 1.8, 新北市: 1.4 },
+        },
+        setFlags: ['hk_restoration', 'anti_ccp_hawk'],
+        pushReactions: [
+          { type: '推', author: 'lihkg_hk', text: '香港人推爆！！如果真有這天我拿特區護照投你！' },
+          { type: '推', author: 'taipei_milk_tea', text: '從國父廣州起義講到香港再光，這歷史縱深太狂了' },
+          { type: '噓', author: 'beijing_alert', text: '（海峽中線雷達瞬間亮起五個紅點）' },
+        ],
+        mediaReaction: '「香港再光」詞條衝上港台日熱搜，維多利亞港老照片在脆上洗版一整夜。',
+      },
+      {
+        id: 'r8_hk_milktea_care',
+        toneLabel: '移民生活牌',
+        label: '端出「在台港人居留審查加速＋茶餐廳創業補助」，只談實質照顧不口號',
+        speechText:
+          '「民進黨把港人當選舉提款機，結果居留案卡關卡到人家哭！我們實實在在給港人安居工作！」',
+        hint: '精準打中執政黨痛點，吸收都會中間與青年選票。',
+        statDelta: { unity: 4, momentum: 8, funds: 3, ccpTension: 4, japanPosture: 6 },
+        swing: { north: 1.0, central: 0.6, south: 0.5, dppShift: -0.7 },
+        pushReactions: [
+          { type: '推', author: 'hk_in_tpe', text: '真的，少喊口號先把定居門檻跟卡關處理好比較實在' },
+        ],
+        mediaReaction: '實務派港人社團公開感謝你點出居留審查塞車問題。',
+      },
+      {
+        id: 'r8_hk_avoid',
+        toneLabel: '冷處理避險',
+        label: '強調「依法審查、兩岸和平穩定最重」，迅速轉回國內物價話題',
+        speechText:
+          '「香港事務依現行法律辦理，台灣當務之急是拚經濟與顧民生！」',
+        hint: '避免刺激北京，但在脆上遭批太冷血。',
+        statDelta: { unity: 2, momentum: -5, funds: 5, ccpTension: -8, japanPosture: -5 },
+        swing: { north: -0.5, central: 0.2, south: -0.4, islands: 0.9 },
+        pushReactions: [
+          { type: '→', author: 'observer_tw', text: '標準打太極閃避問題，沒得罪北京但也沒加到分' },
+        ],
+        mediaReaction: '對岸反應平靜，但年輕選民對藍營的保守印象加深。',
+      },
+    ],
+  },
+  {
+    round: 9,
+    dateLabel: '2027.05 上',
+    boardName: '[Home-Sale / Threads] 五月報稅季與「居住正義」炸裂',
+    title: '報稅痛苦月：高房價、新青安斷頭潮與社宅跳票攻防',
+    situationBrief:
+      '五月報稅季加上房貸寬限期到期潮引爆年輕人怒火，PTT 房版與脆上天天上演「買不起房怪誰」大戰。',
+    ccpNotice: '對岸社群轉載台灣年輕人買房焦慮貼文，推銷大陸創業補貼宣傳。',
+    japanNotice: '東京高齡化與都更經驗成為台灣城市論壇對照組。',
+    rivalPost: {
+      platform: 'Threads 脆',
+      authorName: '賴清德',
+      authorRole: '現任總統 · 民進黨',
+      authorHandle: '@williamlai_tw',
+      portraitKey: 'lai',
+      headline: '政府持續推動百萬租屋補貼與社會住宅，反觀藍營執政縣市卻屢屢卡關社宅用地！',
+      body: '「居住正義需要中央與地方攜手，請特定藍營首長不要把黃金地段都標售給建商！」',
+      likesLabel: '2.9萬愛心 · 7,100則筆戰',
+    },
+    choices: [
+      {
+        id: 'r9_youth_housing',
+        toneLabel: '年輕租屋牌',
+        label: '提出「實坪制＋囤房重稅＋雙北中社宅翻倍」政見',
+        speechText:
+          '「新青安把年輕人騙進高點當接盤俠！我們直接用實坪制與公辦都更打破炒房結構！」',
+        hint: '搶攻大量年輕白營搖擺票，建商金主暫停捐款。',
+        statDelta: { unity: 2, momentum: 10, funds: -9, ccpTension: -2, japanPosture: 2 },
+        swing: { north: 1.2, central: 0.9, south: 0.5, tppShift: -1.3 },
+        pushReactions: [
+          { type: '推', author: 'rent_slave', text: '終於有人講實坪制跟新青安坑殺了，小草考慮轉藍' },
+        ],
+        mediaReaction: '年輕白領討論度飆高，建商公會私下轉向觀望。',
+      },
+      {
+        id: 'r9_tax_cut',
+        toneLabel: '減稅搶票',
+        label: '主打「育兒家庭所得稅減半＋企業加薪抵稅」，穩固中產與金主',
+        speechText:
+          '「通膨吃掉薪水、報稅又剝一層皮！我們執政立刻提高免稅額，讓三明治世代喘口氣！」',
+        hint: '糧草募款暴增、中產穩健成長。',
+        statDelta: { unity: 5, momentum: 4, funds: 12, ccpTension: 0, japanPosture: 3 },
+        swing: { north: 0.7, central: 0.8, south: 0.3, east: 0.4 },
+        pushReactions: [
+          { type: '推', author: 'daddy_tax', text: '五月看到稅單真的想哭，減稅唯一支持！' },
+        ],
+        mediaReaction: '工商界與受薪家庭給予穩定好評，募款餐會秒殺。',
+      },
+      {
+        id: 'r9_chiang_urban',
+        toneLabel: '台北都更牌',
+        label: '【蔣萬安專屬】端出「台北都更十箭＋全台公辦都更示範」！',
+        speechText:
+          '「台北做得到，全台灣都做得到！用都市更新釋放百萬坪新空間，讓青年安居！」',
+        factionOnly: 'chiang',
+        hint: '蔣萬安限定強大北北基桃加成！',
+        statDelta: { unity: 7, momentum: 8, funds: 7, ccpTension: 0, japanPosture: 4 },
+        swing: { north: 1.9, central: 0.5, specificCounties: { 台北市: 2.5, 新北市: 1.6 } },
+        pushReactions: [
+          { type: '推', author: 'daan_resident', text: '都更真的有感，少壯派有戰力！' },
+        ],
+        mediaReaction: '雙北地方里長與都更戶全面力挺，北部拉開差距。',
+      },
+    ],
+  },
+  {
+    round: 10,
+    dateLabel: '2027.05 下',
+    boardName: '[Protest / Taipei] 青鳥與藍鷹街頭大對決',
+    title: '立院外十萬人對峙：青鳥集結重慶南路，藍鷹集結八德路！',
+    situationBrief:
+      '國會法案覆議表決夜，支持與反對群眾在台北街頭隔街對峙，脆上充斥各種現場直播與互嗆短影音。',
+    ccpNotice: '大陸官媒緊盯台北街頭群眾運動畫面，預言「島內憲政危機爆發」。',
+    japanNotice: '日本駐台單位提醒僑民避開博愛特區集會周邊道路。',
+    rivalPost: {
+      platform: 'Threads 脆',
+      authorName: '賴清德',
+      authorRole: '現任總統 · 民進黨',
+      authorHandle: '@williamlai_tw',
+      portraitKey: 'lai',
+      headline: '人民站在街頭發出民主的聲音，沒有人可以凌駕憲法與民意！',
+      body: '「請藍白立委聽見年輕公民的心聲，停止強行表決毀憲法案！」',
+      likesLabel: '6.2萬愛心 · 十萬青鳥轉發',
+    },
+    choices: [
+      {
+        id: 'r10_cheng_clash',
+        toneLabel: '正面對撞',
+        label: '親自站上藍鷹戰車吼破喉嚨：「我們才是多數民意！民進黨不服來戰！」',
+        speechText:
+          '「我們一票一票選出來的國會多數，憑什麼要向輸不起的執政黨低頭！今天就是要用多數民意輾過去！」',
+        hint: '黨內士氣與聲量狂升，但中間選民略感厭煩對立。',
+        statDelta: { unity: 10, momentum: 11, funds: 6, ccpTension: 2, japanPosture: -2 },
+        swing: { north: 0.4, central: 0.6, east: 1.1, islands: 0.9 },
+        pushReactions: [
+          { type: '推', author: 'blue_eagle', text: '就是要硬起來！不能再當溫良恭儉讓的沙包了' },
+        ],
+        mediaReaction: '藍鷹現場士氣高昂，黨內鷹派高呼痛快。',
+      },
+      {
+        id: 'r10_hou_calm',
+        toneLabel: '好好做代誌',
+        label: '呼籲「街頭降溫、回歸議事」，同時派警察與救護車發礦泉水照顧雙方群眾',
+        speechText:
+          '「不管是青鳥還是藍鷹，都是台灣的家人。政治攻防在議場內解決，大家平安回家最要緊，侯侯做代誌！」',
+        hint: '溫和選民好感大增、警方與警眷全力相挺。',
+        statDelta: { unity: 3, momentum: 2, funds: 5, ccpTension: -2, japanPosture: 5 },
+        swing: { north: 0.9, central: 0.7, south: 0.5, specificCounties: { 新北市: 1.4 } },
+        setFlags: ['hou_eight_words'],
+        pushReactions: [
+          { type: '推', author: 'police_family', text: '發水給雙方群眾跟基層員警給推，別再製造對立了' },
+        ],
+        mediaReaction: '暖心畫面意外洗版 Threads，對立氣氛短暫降溫。',
+      },
+      {
+        id: 'r10_cheng_special',
+        toneLabel: '戰神開噴',
+        label: '【鄭麗文專屬】拿麥克風連珠砲一小時不換氣，把青鳥側翼罵到啞口無言！',
+        speechText:
+          '「執政十一年還敢裝在野悲情？今天我鄭麗文在這裡一件一件算給你們聽，看誰才是真正的毀憲亂政！」',
+        factionOnly: 'cheng',
+        hint: '鄭麗文專屬：戰鬥力 200% 輸出，深藍全體起立鼓掌！',
+        statDelta: { unity: 12, momentum: 15, funds: 6, ccpTension: 2, japanPosture: -2 },
+        swing: { north: 1.0, central: 0.9, east: 1.2, dppShift: -0.9 },
+        pushReactions: [
+          { type: '推', author: 'kmt_hq', text: '主席這段一鏡到底戰力太鬼神了，側翼全部閉嘴' },
+        ],
+        mediaReaction: '一小時不間斷高能演說成為脆上流量怪物。',
+      },
+    ],
+  },
+  {
+    round: 11,
+    dateLabel: '2027.06 上',
+    boardName: '[Local / KMT] 地方派系大風吹：花蓮王十兆支票危機',
+    title: '年中整合大危機：地方派系要求花東快與環島高鐵，否則不動員！',
+    situationBrief:
+      '進入夏季造勢前夕，傅崐萁率地方派系要求中央承諾天價地方軌道建設與不分區配額，改革派與地方山頭劍拔弩張。',
+    ccpNotice: '地方縣市農漁會交流團傳聞赴陸洽談農產契作，引發陸委會關注。',
+    japanNotice: '日本地方議會繼續推進花東防災觀光合作交流。',
+    rivalPost: {
+      platform: 'PTT 政黑版',
+      authorName: '傅崐萁',
+      authorRole: '立院總召 · 花蓮王',
+      authorHandle: 'Hualien_King_KMT',
+      portraitKey: 'fu',
+      headline: '[新聞] 沒有地方組織動員，空戰能贏得重慶南路嗎？黨中央不要忘本！',
+      body: '「花蓮台東與中台灣鄉親等一條安全回家的路等了三十年！誰挺花東建設，我們才挺誰！」',
+      likesLabel: '推: 450 噓: 820 · 政黑大亂鬥',
+    },
+    choices: [
+      {
+        id: 'r11_bow_to_factions',
+        toneLabel: '綁樁妥協',
+        label: '全面答應地方派系條件，與花蓮、台中、雲林山頭把酒言歡！',
+        speechText:
+          '「沒有地方兄弟就沒有國民黨！花東快與地方建設我們概括承受，全黨一條心拚 2028！」',
+        hint: '團結與糧草大暴衝、東部鐵票狂飆，都會年輕票略損。',
+        statDelta: { unity: 15, momentum: -7, funds: 16, ccpTension: 3, japanPosture: -2 },
+        swing: {
+          north: -0.9,
+          central: 1.2,
+          east: 3.0,
+          specificCounties: { 花蓮縣: 4.0, 台東縣: 3.0, 雲林縣: 1.8 },
+        },
+        setFlags: ['hualien_kingdom'],
+        pushReactions: [
+          { type: '推', author: 'hualien_union', text: '花蓮王出手就是穩！東台灣鐵板一塊' },
+        ],
+        mediaReaction: '東部造勢湧入三萬人，脆上則刷起「地方派系大復活」。',
+      },
+      {
+        id: 'r11_cut_factions',
+        toneLabel: '拒絕分贓',
+        label: '公開宣布「改革派不向地方山頭低頭」，自己拚空氣票！',
+        speechText:
+          '「國家預算是全民的，不是任何山頭的提款機！我們要靠改革贏回台灣！」',
+        hint: '都會與中間選民暴漲，但黨內團結與糧草大傷。',
+        statDelta: { unity: -14, momentum: 12, funds: -13, ccpTension: -2, japanPosture: 5 },
+        swing: { north: 1.5, central: -0.6, east: -3.0, specificCounties: { 台北市: 2.0, 花蓮縣: -3.8 } },
+        setFlags: ['party_civil_war'],
+        pushReactions: [
+          { type: '推', author: 'reform_kmt', text: '終於敢跟派系劃清界線了！' },
+        ],
+        mediaReaction: '地方議長傳出不願掛出聯合看板。',
+      },
+      {
+        id: 'r11_lu_mediate',
+        toneLabel: '媽媽整合',
+        label: '【盧秀燕專屬】親自逐一拜會協調，「建設分期做，大家都有舞台！」',
+        speechText:
+          '「兄弟登山各自努力但不能拆台！成立跨縣市治理平台，要建設也要財政紀律！」',
+        factionOnly: 'lu',
+        hint: '盧秀燕專屬：零副作用整合中部與地方山頭！',
+        statDelta: { unity: 14, momentum: 6, funds: 9, ccpTension: 0, japanPosture: 3 },
+        swing: { central: 2.0, east: 1.2, north: 0.6, specificCounties: { 台中市: 2.2, 彰化縣: 1.6 } },
+        pushReactions: [
+          { type: '推', author: 'taichung_red', text: '盧媽出面真的大家都給面子' },
+        ],
+        mediaReaction: '中台灣與東台灣藍營首長罕見合體站台。',
+      },
+      {
+        id: 'r11_fu_hualien_empire',
+        toneLabel: '花蓮王親自開席',
+        label: '【傅崐萁專屬】直接宣布「當選後總統府第一項工程就是環島高速鐵路！」',
+        speechText:
+          '「從花蓮出發包圍台北！全台灣縣市都要有高鐵跟快速道路，這才是大建設！」',
+        factionOnly: 'fu',
+        hint: '傅崐萁專屬：花東直接衝破 60% 天花板、糧草滿格！',
+        statDelta: { unity: 12, momentum: 8, funds: 18, ccpTension: 2, japanPosture: 0 },
+        swing: { east: 4.5, central: 1.2, north: -0.5, specificCounties: { 花蓮縣: 6.5, 台東縣: 4.0 } },
+        setFlags: ['hualien_kingdom'],
+        pushReactions: [
+          { type: '推', author: 'east_taiwan', text: '花蓮王威武！！環島高鐵蓋起來！' },
+        ],
+        mediaReaction: '花蓮選民沸騰到最高點，財政部長在電視上差點暈倒。',
+      },
+    ],
+  },
+  {
+    round: 12,
+    dateLabel: '2027.06 下',
+    boardName: '[Gossiping / Food] 端午節「南北粽統獨大戰」',
+    title: '端午節脆文全面失控：北部油飯派 vs 南部水煮派竟吵成政黨認同！',
+    situationBrief:
+      '原本只是一年一度的端午節肉粽戰，卻被雙方網軍操作成「北部粽＝天龍藍營、南部粽＝本土綠營」的政治隱喻，全國留言區全面歪樓。',
+    ccpNotice: '大陸福建網民加入戰局說「閩南燒肉粽才是正統」，結果被台灣南北網友聯手嗆爆！',
+    japanNotice: '日本駐台代表在脆上發吃台灣粽子照狂吸五萬讚。',
+    rivalPost: {
+      platform: 'Threads 脆',
+      authorName: '黃國昌',
+      authorRole: '民眾黨戰神 · 亂入',
+      authorHandle: 'KuoChang_TPP',
+      portraitKey: 'huang',
+      headline: '連肉粽都要分藍綠？真正太離譜的是物價漲到一顆肉粽要一百塊！',
+      body: '「花生粉跟甜辣醬不該被意識形態綁架！執政黨先解釋為什麼糯米跟豬肉漲這麼多！」',
+      likesLabel: '4.1萬愛心 · 全國食物鏈大混戰',
+    },
+    choices: [
+      {
+        id: 'r12_eat_both',
+        toneLabel: '我全都要',
+        label: '開直播一口北部粽一口南部粽加東泉辣椒醬＋花生粉：「中華民國全吃！」',
+        speechText:
+          '「誰規定只能選邊站？中部人告訴你什麼叫都好吃！只要是台灣好米台灣豬，這場選舉我們南北通吃！」',
+        hint: '輕鬆幽默、全台各區微幅加分、聲量暴漲！',
+        statDelta: { unity: 4, momentum: 11, funds: 4, ccpTension: -2, japanPosture: 3 },
+        swing: { north: 0.6, central: 0.9, south: 0.7, east: 0.5, dppShift: -0.5 },
+        pushReactions: [
+          { type: '推', author: 'taichung_sauce', text: '加東泉辣椒醬我直接投降，這票給你了' },
+        ],
+        mediaReaction: '端午節最討喜政治影片，彰化與台中肉粽攤商銷量暴增。',
+      },
+      {
+        id: 'r12_south_pork',
+        toneLabel: '搶攻濁水溪',
+        label: '大讚「南部水煮粽配花生粉才是台灣魂」，順勢狂打南部農業政見！',
+        speechText:
+          '「南部粽軟嫩入味就像南部鄉親的人情味！我當選保證讓南部農產外銷暢通！」',
+        hint: '南台灣與農業縣明顯回溫，北部小酸「3D油飯被排擠」。',
+        statDelta: { unity: 2, momentum: 6, funds: 4, ccpTension: 0, japanPosture: 0 },
+        swing: { south: 1.4, central: 0.5, north: -0.3, specificCounties: { 台南市: 1.5, 高雄市: 1.6 } },
+        pushReactions: [
+          { type: '推', author: 'tainan_food', text: '終於懂南部粽加花生粉的美好了，南部給點面子' },
+        ],
+        mediaReaction: '高雄與屏東地方市場反應熱烈。',
+      },
+      {
+        id: 'r12_inflation_attack',
+        toneLabel: '砲轟物價',
+        label: '拿出一張兩百元的肉粽發票痛罵政府：「薪水沒漲、端午都快吃不起！」',
+        speechText:
+          '「還敢笑肉粽南北戰？老百姓買兩顆粽子加一碗四神湯就要兩百五，民進黨管過物價嗎？」',
+        hint: '受薪階級共鳴強烈，穩健吃下白營與中間票。',
+        statDelta: { unity: 4, momentum: 7, funds: 3, ccpTension: 0, japanPosture: 0 },
+        swing: { north: 0.7, central: 0.8, south: 0.5, tppShift: -0.7 },
+        pushReactions: [
+          { type: '推', author: 'office_slaves', text: '真的，昨天買一顆九十塊差點吐血' },
+        ],
+        mediaReaction: '物價焦點成功壓過對手的口水議題。',
+      },
+    ],
+  },
+  {
+    round: 13,
+    dateLabel: '2027.07 上',
+    boardName: '[Tech / PowerGrid] 盛夏跳電與「松鼠滅台」神梗',
+    title: '七月酷暑 39 度！備轉容量剩 2.8%，北中南輪流跳電怪松鼠',
+    situationBrief:
+      '七月熱浪來襲，興達與大潭機組相繼跳機，雙北與竹科傍晚驚傳局部停電，台電宣稱只是「松鼠誤觸開關」。脆上與 PTT 全面大爆炸！',
+    ccpNotice: '大陸網路嘲諷「島內停電還要造晶片」，國台辦趁機推銷福建送電構想。',
+    japanNotice: '日本熊本與台灣半導體供應鏈緊急盤點備援電力。',
+    rivalPost: {
+      platform: 'PTT 八卦版',
+      authorName: '賴清德',
+      authorRole: '總統府緊急聲明',
+      authorHandle: 'Power_Dispatch',
+      portraitKey: 'lai',
+      headline: '[新聞] 總統府強調全台電網整體穩定，個別區域跳電屬設備與動物意外。',
+      body: '「台電同仁正頂著烈日搶修，請在野黨勿借小動物意外進行政治恐嚇！」',
+      likesLabel: '推: 112 噓: XXXX (被噓爆到X9)',
+    },
+    choices: [
+      {
+        id: 'r13_squirrel_meme',
+        toneLabel: '松鼠玩偶神殺',
+        label: '抱著兩公尺大松鼠玩偶開記者會：「台灣最大背鍋俠就是這隻松鼠！」',
+        speechText:
+          '「停電怪松鼠、跳機怪小鳥、缺電怪人民冷氣開太低！民進黨執政十一年，電網脆弱到連松鼠都能滅台嗎？」',
+        hint: '全網瘋狂二創、藍白青年票同時狂飆！',
+        statDelta: { unity: 6, momentum: 18, funds: 5, ccpTension: 0, japanPosture: 2 },
+        swing: { north: 1.5, central: 1.4, south: 0.9, dppShift: -1.4, specificCounties: { 新竹市: 2.2 } },
+        setFlags: ['squirrel_meme_master'],
+        pushReactions: [
+          { type: '推', author: 'hsinchu_fab', text: '幹松鼠玩偶這波操作滿分，全竹科都傳瘋了' },
+        ],
+        mediaReaction: '「松鼠電網」成為年度十大金句，賴政府民調單週重挫。',
+      },
+      {
+        id: 'r13_fujian_power_trap',
+        toneLabel: '危險發言',
+        label: '脫口而出：「既然缺電，不如研究金廈併網甚至請福建輸電！」',
+        speechText:
+          '「民生用電不分藍綠，先接對岸電網當備援有什麼不能談？」',
+        hint: '超級政治地雷！本島選情重挫、美日急電警告，僅金門連江叫好！',
+        statDelta: { unity: -14, momentum: 6, funds: 0, ccpTension: -6, japanPosture: -20 },
+        swing: { north: -2.6, central: -2.0, south: -2.8, islands: 2.5, dppShift: 2.2 },
+        setFlags: ['grid_surrender_gaffe'],
+        pushReactions: [
+          { type: '噓', author: 'taiwan_tech', text: '把電網開關交給北京？你認真的嗎？' },
+        ],
+        mediaReaction: 'DPP 連夜剪出十支廣告「票投國民黨、開關在北京」。',
+      },
+      {
+        id: 'r13_jaw_studio',
+        toneLabel: '戰情室白板',
+        label: '【趙少康專屬】連續五晚開戰情室直播，一字一句拆穿台電購電財報！',
+        speechText:
+          '「台電一年虧幾千億、再生能源買幾塊錢，我今天在白板上算給全台灣兩千三百萬人看！」',
+        factionOnly: 'jaw',
+        hint: '趙少康專屬：軍公教與股民大量回流！',
+        statDelta: { unity: 7, momentum: 12, funds: 11, ccpTension: 2, japanPosture: 4 },
+        swing: { north: 2.0, central: 1.4, east: 1.1, specificCounties: { 台北市: 2.4, 桃園市: 1.9 } },
+        pushReactions: [
+          { type: '推', author: 'stock_investor', text: '白板算台電成本真的專業，這次戰情室贏了' },
+        ],
+        mediaReaction: '政論節目收視率創年度新高，理財族群明顯轉藍。',
+      },
+    ],
+  },
+  {
+    round: 14,
+    dateLabel: '2027.07 下',
+    boardName: '[Weather / Politics] 強颱登陸「放不放颱風假」政治大豪賭',
+    title: '七月底強颱逼近！全台灣都在等「明天到底放不放颱風假？」',
+    situationBrief:
+      '氣象署預報暴風圈擦邊而過，藍營執政縣市面臨要不要放假的兩難：放假被脆友喊「最帥市長」，無風無雨放假卻會被企業界罵爆浪費百億產值！',
+    ccpNotice: '福建沿海船隻同樣進港避風，台海演訓暫停兩天。',
+    japanNotice: '石垣島與宮古島同受強颱外圍環流影響，台日航線大亂。',
+    rivalPost: {
+      platform: 'Threads 脆',
+      authorName: '賴清德',
+      authorRole: '中央災害應變中心',
+      authorHandle: '@williamlai_tw',
+      portraitKey: 'lai',
+      headline: '防颱決策應秉持科學與專業氣象數據，不可淪為地方討好選民的政治秀！',
+      body: '「呼籲各地方首長以科學標準判斷停班課，切勿隨便放假！」',
+      likesLabel: '2.5萬愛心 · 兩百萬上班族盯著手機刷新',
+    },
+    choices: [
+      {
+        id: 'r14_typhoon_holiday',
+        toneLabel: '全放了啦！',
+        label: '力挺藍營縣市「防災從寬、全國連動放假」：上班族先睡到飽再說！',
+        speechText:
+          '「命比較重要還是老闆的 KPI 重要？風強雨大叫勞工騎車去上班才沒良心！支持放假！」',
+        hint: '全台灣上班族與學生爽翻天、網路聲量暴衝，但商總微詞且資金略降。',
+        statDelta: { unity: 4, momentum: 14, funds: -7, ccpTension: -3, japanPosture: 0 },
+        swing: { north: 1.1, central: 1.1, south: 0.9, tppShift: -0.9 },
+        pushReactions: [
+          { type: '推', author: 'salaryman_tw', text: '誰挺放假我就投誰！！明天早上睡到自然醒' },
+          { type: '噓', author: 'boss_club', text: '外面出大太陽你們在放什麼假啦' },
+        ],
+        mediaReaction: '隔天雖然風雨不大，但 KTV 與百貨公司擠滿投票人潮，脆上評價兩極但流量爆棚。',
+      },
+      {
+        id: 'r14_typhoon_science',
+        toneLabel: '科學不放',
+        label: '支持依氣象數據「未達標正常上班上課」，展現負責任執政態度',
+        speechText:
+          '「國家競爭力不能天天放政治假，我們尊重專業數據！」',
+        hint: '工商金主感動大捐款，但全國社畜怒火直衝天靈蓋！',
+        statDelta: { unity: 2, momentum: -10, funds: 13, ccpTension: -2, japanPosture: 4 },
+        swing: { north: -0.8, central: -0.7, south: -0.6, tppShift: 0.8 },
+        pushReactions: [
+          { type: '噓', author: 'wet_commuter', text: '幹你媽外面風大到雨傘開花叫我上班？這票我不投了' },
+        ],
+        mediaReaction: '隔天早上八點通勤族淋成落湯雞，你的脆帳號湧入三萬則憤怒留言。',
+      },
+      {
+        id: 'r14_han_typhoon',
+        toneLabel: '庶民關心',
+        label: '【韓國瑜專屬】半夜穿雨衣巡視下水道清淤：「水退得快，人心就安！」',
+        speechText:
+          '「治水不是口號，清淤才是真功夫！今天不談放假口水，我看水溝蓋！」',
+        factionOnly: 'han',
+        hint: '韓國瑜專屬：南台灣與基層長輩讚不絕口！',
+        statDelta: { unity: 8, momentum: 10, funds: 5, ccpTension: -2, japanPosture: 2 },
+        swing: { south: 1.9, central: 0.9, east: 0.8, specificCounties: { 高雄市: 2.3 } },
+        pushReactions: [
+          { type: '推', author: 'khh_local', text: '當年韓總清下水道真的沒淹那麼慘，基層推' },
+        ],
+        mediaReaction: '韓國瑜半夜拿手電筒照水溝蓋的畫面意外成為正面暖新聞。',
+      },
+    ],
+  },
+  {
+    round: 15,
+    dateLabel: '2027.08 上',
+    boardName: '[Diplomacy / Diaoyu] 釣魚島主權對峙與美日態度大考！',
+    title: '八月東海風雲：釣魚島（釣魚台）保釣漁船對峙！如何平衡主權與美日安保態度？',
+    situationBrief:
+      '宜蘭蘇澳與基隆漁船團八月集結前往釣魚台海域捕魚，遭遇外國公務船廣播驅離、美日第七艦隊亦在琉球海域演習！同一天華府與東京智庫同時致電詢問你「上任後美日態度與釣魚島主權底線為何？」',
+    ccpNotice: '大陸海警船編隊同步現身釣魚島十二海里外圍宣示存在，北京嚴盯台灣藍營反應。',
+    japanNotice: '華府與東京密切評估你在「釣魚島爭議」與「美日印太安全同盟」之間如何取捨。',
+    rivalPost: {
+      platform: 'Threads 脆',
+      authorName: '蕭美琴',
+      authorRole: '現任副總統 · 民進黨',
+      authorHandle: '@bikhim_tw',
+      portraitKey: 'hsiao',
+      headline: '台灣與美日共享印太和平秩序！面對威權擴張，我們必須優先深化台美日安保互信！',
+      body: '「在釣魚台漁權問題上應透過台日對話機制冷靜協商，切勿中了北京挑撥台美日關係的離間計！」',
+      likesLabel: '4.1萬愛心 · 保釣與美日同盟大辯論',
+    },
+    choices: [
+      {
+        id: 'r15_diaoyu_sovereignty_hawk',
+        toneLabel: '強硬保釣！',
+        label: '拍桌怒吼：「釣魚島是中華民國領土！海巡艦全程護漁寸步不退，美日態度不能凌駕漁民生計！」',
+        speechText:
+          '「宜蘭漁民捕魚被水砲噴，執政黨卻只會對美日鞠躬哈腰！釣魚台主權一步不讓，我當選直接派海巡旗艦護漁！」',
+        hint: '宜蘭、深藍與保釣派沸騰叫好，但美日態度瞬間大跌 -18！',
+        statDelta: { unity: 11, momentum: 14, funds: 4, ccpTension: 4, japanPosture: -18 },
+        swing: {
+          north: -0.6,
+          central: 0.4,
+          east: 2.2,
+          islands: 1.8,
+          specificCounties: { 宜蘭縣: 2.9, 花蓮縣: 1.6 },
+        },
+        setFlags: ['diaoyu_patrol', 'anti_us_japan_line'],
+        pushReactions: [
+          { type: '推', author: 'suao_boat', text: '終於有人幫蘇澳漁民在釣魚台講話了！水砲噴過來真的吞不下' },
+          { type: '噓', author: 'usjp_security', text: '美日同盟好感度直接大跳水，小心後面被放生' },
+        ],
+        mediaReaction: '「釣魚島寸步不讓」衝上 PTT 爆文，華府與東京高層連夜發出關切電報。',
+      },
+      {
+        id: 'r15_tokyo_washington_alliance',
+        toneLabel: '深化美日同盟',
+        label: '主張「擱置釣魚島爭議、全面深化台美日第一島鏈聯防」，爭取美日軍事奧援！',
+        speechText:
+          '「台海安全與半導體生命線離不開美日同盟！我們主張重啟釣魚台共同漁業談判、並全面對接美日安保情資！」',
+        hint: '美日態度暴漲 +22、北部科技票大補，深藍保釣派罵「太軟弱」，北京壓力上升！',
+        statDelta: { unity: -5, momentum: 9, funds: 7, ccpTension: 14, japanPosture: 22 },
+        swing: {
+          north: 1.5,
+          central: 0.9,
+          south: 0.6,
+          east: -0.9,
+          islands: -1.1,
+          specificCounties: { 台北市: 1.8, 新竹市: 1.6 },
+        },
+        setFlags: ['pro_japan_security', 'diaoyu_compromise'],
+        pushReactions: [
+          { type: '推', author: 'tokyo_washington', text: '美日聯防穩住了！如果真開戰才有外援可依靠' },
+          { type: '噓', author: 'old_bao_diao', text: '連釣魚台都不敢大聲喊主權，算什麼國民黨？' },
+        ],
+        mediaReaction: '華府與東京主流媒體稱讚藍營具備負責任執政格局。',
+      },
+      {
+        id: 'r15_chu_excel_diplomacy',
+        toneLabel: '精算師外交',
+        label: '【朱立倫專屬】拿出東海資源精算簡報密會美日代表，把釣魚島風險與美日互信同時穩住！',
+        speechText:
+          '「外交不是喊口號，是用精準數據確保台美日同盟、漁權保障與兩岸和平的動態平衡！」',
+        factionOnly: 'chu',
+        hint: '朱立倫專屬：美日態度大升 +16 且不刺激北京與漁民！',
+        statDelta: { unity: 5, momentum: 4, funds: 9, ccpTension: -6, japanPosture: 16 },
+        swing: { north: 1.2, central: 0.8, east: 0.7, specificCounties: { 桃園市: 1.8, 新竹市: 1.4 } },
+        setFlags: ['diaoyu_compromise'],
+        pushReactions: [
+          { type: '推', author: 'diplomat_tw', text: '精算師搞外交還是比只會喊打喊殺穩多了' },
+        ],
+        mediaReaction: '華府與東京智庫學者罕見同時發出正面評價。',
+      },
+      {
+        id: 'r15_sushi_trade',
+        toneLabel: '漁業經濟牌',
+        label: '呼籲「主權各表、魚貨共賣」，邀美日與台灣漁會合辦黑鮪魚觀光祭降溫！',
+        speechText:
+          '「少在海上互相噴水砲，大家坐下來拚黑鮪魚觀光與半導體經貿，不是雙贏嗎？」',
+        hint: '零風險安全牌，微幅改善美日態度與漁民氣氛。',
+        statDelta: { unity: 2, momentum: 3, funds: 6, ccpTension: -3, japanPosture: 8 },
+        swing: { north: 0.5, central: 0.5, east: 0.6 },
+        setFlags: ['diaoyu_compromise'],
+        pushReactions: [
+          { type: '推', author: 'tuna_fan', text: '黑鮪魚生魚片比較香啦，別撞船了' },
+        ],
+        mediaReaction: '安全過關的一輪，美日與本地漁會均未強烈反彈。',
+      },
+    ],
+  },
+  {
+    round: 16,
+    dateLabel: '2027.08 下',
+    boardName: '[Meme / Folklore] 全台「宮廟繞境與死亡之握」迷因大戰',
+    title: '中元普渡大造勢：藍綠同場媽祖廟，卻因握手引發神秘都市傳說！',
+    situationBrief:
+      '中元節全台大拜拜，藍綠白三陣營在台中大甲鎮瀾宮與雲林北港朝天宮狹路相逢。網友把所有候選人握手畫面剪成《台灣政治因果律大對決》瘋傳！',
+    ccpNotice: '福建湄洲媽祖文化交流協會發來祝福賀電，統戰部同步觀望中南部宮廟風向。',
+    japanNotice: '日本媒體對台灣「選舉一定要拜媽祖」的民俗奇觀深感興趣。',
+    rivalPost: {
+      platform: 'PTT 八卦版',
+      authorName: '柯文哲',
+      authorRole: '民眾黨創黨主席',
+      authorHandle: 'KP_Taiwan',
+      portraitKey: 'ko',
+      headline: '[問卦] 拜廟拜到一半全場都在閃某人的手是什麼情況？',
+      body: '「政治要科學理性務實！宮廟大拜拜不要搞成迷信作秀，重點是地方交通跟長照！」',
+      likesLabel: '推: 爆 · 5,600則迷因二創',
+    },
+    choices: [
+      {
+        id: 'r16_grip_blessing',
+        toneLabel: '玄學反殺',
+        label: '笑著對鏡頭舉起雙手：「來！誰敢跟我握手的站出來，沒握過別說選總統！」',
+        speechText:
+          '「民進黨怕的不是我這雙手，是怕人民用這雙手把他們投下台！不服來握手！」',
+        hint: 'PTT 與脆上梗圖狂飆，中南部宮廟群眾鼓掌大笑！',
+        statDelta: { unity: 5, momentum: 13, funds: 5, ccpTension: 0, japanPosture: 0 },
+        swing: { central: 1.0, south: 0.8, dppShift: -0.6 },
+        setFlags: ['death_grip_activated'],
+        pushReactions: [
+          { type: '推', author: 'temple_bro', text: '幹 自己玩自己玄學梗真的強，旁邊綠營立委都不敢伸手笑死' },
+        ],
+        mediaReaction: '對手候選人在廟埕巧妙躲開握手的 3 秒慢動作重播破千萬次觀看。',
+      },
+      {
+        id: 'r16_temple_network',
+        toneLabel: '宮廟綁樁',
+        label: '逐桌敬茶拜會地方董監事會，低調塞入中元普渡贊助與地方修路承諾',
+        speechText:
+          '「敬天敬神更要敬重基層長輩！宮廟文化是台灣最重要的安定力量！」',
+        hint: '中南部組織盤與糧草穩健入袋。',
+        statDelta: { unity: 7, momentum: 1, funds: 10, ccpTension: 0, japanPosture: 0 },
+        swing: { central: 0.9, south: 0.9, specificCounties: { 雲林縣: 1.6, 彰化縣: 1.3 } },
+        pushReactions: [
+          { type: '推', author: 'yunlin_elder', text: '懂得做人有禮貌，中南部還是看這套' },
+        ],
+        mediaReaction: '中南部農漁與宮廟系統默默轉為力挺藍營。',
+      },
+      {
+        id: 'r16_ban_pork_ghost',
+        toneLabel: '食安普渡',
+        label: '發起「普渡好兄弟也要吃台灣本土豬，拒吃萊豬！」超狂供品秀',
+        speechText:
+          '「連好兄弟都堅持吃健康國產豬！民進黨拜託不要再塞進口毒豬肉上供桌了！」',
+        hint: '成功把七月鬼門開結合食安梗，農業縣大推！',
+        statDelta: { unity: 4, momentum: 9, funds: 3, ccpTension: 0, japanPosture: -3 },
+        swing: { central: 0.8, south: 0.7, specificCounties: { 雲林縣: 1.5, 屏東縣: 1.0 } },
+        pushReactions: [
+          { type: '推', author: 'pork_union', text: '連好兄弟都照顧到，雲林養豬協會淚推' },
+        ],
+        mediaReaction: '超荒謬供品梗圖在脆上引發熱烈轉發。',
+      },
+    ],
+  },
+  {
+    round: 17,
+    dateLabel: '2027.09 上',
+    boardName: '[Threads / MemeWar] 營養午餐與網軍 IP 大查帳',
+    title: '九月脆文核爆戰：「圖卡網軍一條龍」意外抓包公關公司 IP！',
+    situationBrief:
+      '九月開學季原本只是一場營養午餐補助口水戰，沒想到 PTT 網友抓包多個深夜狂洗脆文的網軍帳號竟連回同一間行銷公關公司 IP，網路風向瞬間失控！',
+    ccpNotice: '國安單位宣稱偵測到境外協同帳號介入社群洗版。',
+    japanNotice: '日媒專題報導台灣「Threads 脆治國」的極端政治生態。',
+    rivalPost: {
+      platform: 'Threads 脆',
+      authorName: '賴清德',
+      authorRole: '民進黨社群反擊',
+      authorHandle: '@williamlai_tw',
+      portraitKey: 'lai',
+      headline: '假帳號與網軍正在撕裂台灣民主！我們堅決要求平台徹查境外資金！',
+      body: '「這波抹黑政府食安與教育政策的異常流量，背後是誰在出錢買單？」',
+      likesLabel: '4.5萬愛心 · 1.2萬則互咬留言',
+    },
+    choices: [
+      {
+        id: 'r17_counter_expose',
+        toneLabel: '反殺標案',
+        label: '甩出更猛資料反抓執政黨公標案網軍：「查水表先查自己標案！」',
+        speechText:
+          '「誰有幾百億政府預算養媒體與公關公司？一邊用納稅錢買側翼、一邊喊境外勢力，簡直笑掉大牙！」',
+        hint: '網路聲量與年輕選民大反彈，側翼遭群嘲。',
+        statDelta: { unity: 5, momentum: 14, funds: -3, ccpTension: 3, japanPosture: 0 },
+        swing: { north: 1.1, central: 1.0, south: 0.6, dppShift: -1.1 },
+        pushReactions: [
+          { type: '推', author: 'ptt_ip_hunter', text: '標案金額一貼出來側翼全部安靜了笑死' },
+        ],
+        mediaReaction: 'PTT 與脆上掀起「標案大查帳」熱潮，執政黨緊急下架多支圖卡。',
+      },
+      {
+        id: 'r17_clean_internet',
+        toneLabel: '反網軍公約',
+        label: '呼籲朝野簽署「反網軍公約」，只論政策不買流量',
+        speechText:
+          '「台灣被網軍治國害慘十年了！我承諾團隊不養網軍，也請對手停止動用國家機器！」',
+        hint: '贏得高學歷中間與部分白營選票，聲量略降。',
+        statDelta: { unity: 4, momentum: -5, funds: 4, ccpTension: -2, japanPosture: 3 },
+        swing: { north: 0.9, central: 0.6, tppShift: -0.9 },
+        pushReactions: [
+          { type: '推', author: 'eng_voter', text: '早就受夠兩邊側翼洗版了' },
+        ],
+        mediaReaction: '評論家讚賞格調，但社群觸及率短暫下滑。',
+      },
+      {
+        id: 'r17_ai_bot_meme',
+        toneLabel: '魔法對轟',
+        label: '宣布推出「國民黨 AI 反串機器人」，每天自動回嗆側翼一百萬次！',
+        speechText:
+          '「既然民進黨要用網軍治國，那我們就用科學魔法打敗魔法！24 小時全自動酸爆雙標！」',
+        hint: '脆上大亂鬥極致！聲量爆衝但容易觸發「脆文治國系統崩潰」線！',
+        statDelta: { unity: -4, momentum: 18, funds: -5, ccpTension: 2, japanPosture: -3 },
+        swing: { north: 0.5, central: 0.4, tppShift: -0.8 },
+        setFlags: ['meme_king', 'threads_shitposter'],
+        pushReactions: [
+          { type: '推', author: 'cyber_tw', text: '幹 這下真的變全自動脆文機器人內戰了，台灣毀滅算了' },
+        ],
+        mediaReaction: 'Threads 伺服器一度因政治留言過量當機半小時。',
+      },
+    ],
+  },
+  {
+    round: 18,
+    dateLabel: '2027.09 下',
+    boardName: '[NightLife / Disaster] 凌晨兩點半鹹酥雞直播暴走夜',
+    title: '【高能翻車風險】幕僚忘了關機，你凌晨兩點半在宵夜攤開脆直播！',
+    situationBrief:
+      '跑完十場地方行程又餓又累，凌晨兩點半你在夜市買鹽酥雞配冰啤酒，滑手機看到脆上側翼造謠你收紅錢，當場血壓飆到兩百！',
+    ccpNotice: '大陸夜貓子網友翻牆看直播吃宵夜，狂刷「這候選人真接地氣」。',
+    japanNotice: '無外交影響，純屬台灣本土夜間政治實境秀。',
+    rivalPost: {
+      platform: 'Threads 脆',
+      authorName: '賴清德',
+      authorRole: '匿名側翼粉專連動',
+      authorHandle: '@green_spin_2028',
+      portraitKey: 'lai',
+      headline: '藍營候選人白天喊反共、晚上跑攤不知跟誰喝酒吃飯？民眾看在眼裡！',
+      body: '「行程滿檔卻不公開金流與密會名單，是不是心虛不敢面對檢驗？」',
+      likesLabel: '1.8萬愛心 · 凌晨釣魚挑釁',
+    },
+    choices: [
+      {
+        id: 'r18_late_night_live',
+        toneLabel: '三字經暴走',
+        label: '抓起雞排對鏡頭開罵：「幹你娘側翼三小！有種凌晨來夜市跟我單挑！」',
+        speechText:
+          '「來來來！不服氣的上線對罵！一天到晚抹紅造謠，你們這些領標案的網軍懂個屁！九層塔加辣我照樣幹翻你們！」',
+        hint: '極高危政治迷因線！聲量暴衝但黨內團結重創 -20（過低恐直接退選或觸發隱藏結局）！',
+        statDelta: { unity: -20, momentum: 20, funds: -8, ccpTension: 2, japanPosture: -6 },
+        swing: { north: -1.6, central: -1.3, south: 0.6, tppShift: 1.2 },
+        setFlags: ['midnight_livestream_crash', 'threads_shitposter'],
+        pushReactions: [
+          { type: '推', author: 'night_owl', text: '幹凌晨兩點半看總統候選人啃雞排開噴，這國家太魔幻了' },
+          { type: '噓', author: 'kmt_chair', text: '（黨中央總幹事連夜拔總部網路線中）' },
+        ],
+        mediaReaction: '隔天所有新聞台循環播放你咬著雞排罵酸民的畫面，「脆文治國」登上全球迷因榜。',
+      },
+      {
+        id: 'r18_midnight_mukbang',
+        toneLabel: '和平吃播',
+        label: '忍住怒火改播「介紹台灣巷口鹽酥雞跟甜不辣」，順便揪網友投票！',
+        speechText:
+          '「側翼半夜不睡覺在造謠，我帶大家吃台灣最棒的宵夜！老闆多加一份四季豆，2028 大家吃飽才有力氣換政府！」',
+        hint: '超圈粉宵夜吃播！年輕選民與夜市攤商好感度狂飆！',
+        statDelta: { unity: 3, momentum: 13, funds: 4, ccpTension: 0, japanPosture: 2 },
+        swing: { north: 0.9, central: 1.0, south: 0.8, dppShift: -0.6 },
+        pushReactions: [
+          { type: '推', author: 'hungry_ptt', text: '害我半夜一點跑出門買鹽酥雞，可惡給推' },
+        ],
+        mediaReaction: '該家鹽酥雞攤隔天大排長龍兩小時，年輕人直呼「意外可愛」。',
+      },
+      {
+        id: 'r18_sleep_early',
+        toneLabel: '關機睡覺',
+        label: '直接把手機交給幕僚去睡覺，明天早上九點發正式律師函！',
+        speechText:
+          '「不隨宵夜酸民起舞，明日由競選辦公室依法提告抹黑粉專！」',
+        hint: '安全穩健，守住黨內基本格調。',
+        statDelta: { unity: 5, momentum: -2, funds: 2, ccpTension: 0, japanPosture: 2 },
+        swing: { north: 0.3, central: 0.3 },
+        pushReactions: [
+          { type: '→', author: 'pr_director', text: '感謝老闆半夜沒自己發文，幕僚終於能睡五小時' },
+        ],
+        mediaReaction: '次日律師函準時遞交地檢署，波瀾不驚。',
+      },
+    ],
+  },
+  {
+    round: 19,
+    dateLabel: '2027.10 上',
+    boardName: '[NationalDay / ROC] 雙十國慶大典與中華民國神主牌',
+    title: '雙十國慶攻防：捍衛青天白日滿地紅 vs 穿越 1949 重慶市！',
+    situationBrief:
+      '雙十國慶典禮上，賴清德提出新版「兩國互不隸屬」論述並搭配大型國旗投影，企圖搶走中華民國派選票。',
+    ccpNotice: '北京怒斥「新兩國論變種」，福建軍機架次翻倍。',
+    japanNotice: '各國使節出席國慶典禮，密切關注在野黨如何回應主權定位。',
+    rivalPost: {
+      platform: 'Threads 脆',
+      authorName: '賴清德',
+      authorRole: '國慶演說 · 總統府',
+      authorHandle: '@williamlai_tw',
+      portraitKey: 'lai',
+      headline: '無論稱呼我們是中華民國、台灣或中華民國台灣，我們都是主權獨立的國家！',
+      body: '「中華人民共和國無權代表台灣！這是兩千三百萬人最大的公約數！」',
+      likesLabel: '7.4萬愛心 · 藍營內部激烈論戰',
+    },
+    choices: [
+      {
+        id: 'r19_roc_1912',
+        toneLabel: '正統中華民國',
+        label: '高舉國旗怒轟：「別拿中華民國當遮羞布！國民黨萬歲！三民主義萬歲！」',
+        speechText:
+          '「過去把中華民國當災難、現在為了騙票又緊抱神主牌！捍衛 1912 年建立的中華民國憲法，只有國民黨做得到！中華民國萬歲！」',
+        hint: '收復中華民國派與深藍鐵票，同時維持合理平衡。',
+        statDelta: { unity: 14, momentum: 10, funds: 10, ccpTension: 3, japanPosture: 2 },
+        swing: { north: 1.2, central: 1.1, south: 0.4, east: 1.5, islands: 1.2 },
+        setFlags: ['roc_orthodox'],
+        pushReactions: [
+          { type: '推', author: 'roc_1912', text: '這才叫直球對決！戳破借殼上市！' },
+        ],
+        mediaReaction: '全藍營縣市長在雙十升旗典禮齊聲呼應，凝聚力衝上高點。',
+      },
+      {
+        id: 'r19_1949_nanjing',
+        toneLabel: '時空穿越線',
+        label: '狂熱大喊：「重慶南路不只是總統府，我們還要奪回大陸重慶市跟南京！」',
+        speechText:
+          '「我們不只是要奪回台北重慶南路一段122號，我們還要讓青天白日照耀秋海棠，回到 1949 年的重慶！」',
+        hint: '全場媒體當機！觸發極端時空錯亂級政治迷因（小心飛錯機場結局）！',
+        statDelta: { unity: -10, momentum: 18, funds: -6, ccpTension: 20, japanPosture: -10 },
+        swing: { north: -1.8, central: -1.5, south: -2.2, islands: 1.8 },
+        setFlags: ['chongqing_1949_meme'],
+        pushReactions: [
+          { type: '推', author: 'history_meme', text: '笑到翻過去，現在是2027還是1950年？' },
+        ],
+        mediaReaction: '微博與 Threads 同時瘋傳這段發言，被封為年度最荒謬歷史穿越時刻。',
+      },
+      {
+        id: 'r19_economy_flag',
+        toneLabel: '民生實質',
+        label: '不跟進國號文字遊戲：「老百姓只在乎國慶連假物價漲多少！」',
+        speechText:
+          '「執政黨每次選舉就大玩文字遊戲，人民要的是薪水跟得上房價！」',
+        hint: '穩住中間務實選民，深藍略感不過癮。',
+        statDelta: { unity: -4, momentum: 3, funds: 5, ccpTension: -5, japanPosture: 2 },
+        swing: { north: 0.6, central: 0.8, south: 0.3, east: -0.4 },
+        pushReactions: [
+          { type: '推', author: 'office_worker', text: '放假比較實在，誰管文字遊戲' },
+        ],
+        mediaReaction: '經濟選民點頭稱是。',
+      },
+    ],
+  },
+  {
+    round: 20,
+    dateLabel: '2027.10 下',
+    boardName: '[Aviation / Meme] 桃園機場跳電＋珍奶外交救國記',
+    title: '國門糗大！桃園機場行李轉盤停擺兩小時，外國旅客改喝珍珠奶茶苦等',
+    situationBrief:
+      '十月下旬大量外賓與返台僑胞湧入桃園機場，卻因系統跳電導致入境大廳摸黑兩小時。脆上狂洗「台灣國門之恥」。',
+    ccpNotice: '對岸網民趁機大肆轉發桃機摸黑影片。',
+    japanNotice: '日本觀光客在機場排隊喝珍奶拍照反而覺得「很台灣味」意外沒生氣。',
+    rivalPost: {
+      platform: 'Threads 脆',
+      authorName: '蕭美琴',
+      authorRole: '現任副總統 · 民進黨',
+      authorHandle: '@bikhim_tw',
+      portraitKey: 'hsiao',
+      headline: '交通部已要求桃機公司立即檢修電力與備援系統，確保國際旅客權益！',
+      body: '「請大家給第一線機場同仁加油，不要拿單一工程跳脫無限上綱！」',
+      likesLabel: '2.1萬愛心 · 桃園選民暴怒',
+    },
+    choices: [
+      {
+        id: 'r20_boba_rescue',
+        toneLabel: '珍奶外交',
+        label: '直接包下五百杯台灣珍珠奶茶衝進桃機發給滯留外賓，「順便酸政府沒電用！」',
+        speechText:
+          '「外國朋友來台灣被停電嚇到，我們國民黨先請大家喝全糖少冰珍奶壓壓驚！至於交通部與經濟部，明天全部給我進立院罰站！」',
+        hint: '超強危機兼公關操作！桃園與外交分數雙漲！',
+        statDelta: { unity: 5, momentum: 12, funds: -4, ccpTension: 0, japanPosture: 8 },
+        swing: { north: 1.0, central: 0.5, specificCounties: { 桃園市: 2.0, 台北市: 1.0 } },
+        setFlags: ['boba_diplomacy'],
+        pushReactions: [
+          { type: '推', author: 'taoyuan_local', text: '發珍奶順便罵交通部這招太聰明了吧，日本觀光客都比讚' },
+        ],
+        mediaReaction: '外媒拍下旅客手拿珍奶笑著合照的畫面，成為超強對比新聞。',
+      },
+      {
+        id: 'r20_airport_audit',
+        toneLabel: '嚴肅究責',
+        label: '要求交通部長下台、全面體檢國家關鍵基礎設施！',
+        speechText:
+          '「機場跳電、竹科降壓、火車誤點，執政黨到底還能出幾次包？」',
+        hint: '桃園與工商票穩健加分。',
+        statDelta: { unity: 4, momentum: 6, funds: 4, ccpTension: 0, japanPosture: 3 },
+        swing: { north: 0.8, central: 0.6, specificCounties: { 桃園市: 1.3 } },
+        pushReactions: [
+          { type: '推', author: 'commuter_tw', text: '真的每次都在桃機丟臉，該換人了' },
+        ],
+        mediaReaction: '交通委員會隔天立刻排定專案報告。',
+      },
+      {
+        id: 'r20_blame_squirrel_again',
+        toneLabel: '松鼠二連發',
+        label: '在脆上發圖問：「這次該不會又是機場跑道上的松鼠咬斷電纜吧？」',
+        speechText:
+          '「建議成立『國家級松鼠防範部』，專門幫民進黨所有的跳電找動物背鍋！」',
+        hint: '梗圖迷因強度破表，網路年輕人笑到無法自拔！',
+        statDelta: { unity: 2, momentum: 15, funds: 0, ccpTension: 0, japanPosture: 0 },
+        swing: { north: 0.7, central: 0.7, south: 0.5, dppShift: -0.7 },
+        setFlags: ['squirrel_meme_master'],
+        pushReactions: [
+          { type: '推', author: 'ptt_laugh', text: '松鼠：幹我怎麼又被cue了，我在森林睡覺欸' },
+        ],
+        mediaReaction: '「國家松鼠部」迷因一天內累積破五十萬轉發。',
+      },
+    ],
+  },
+  {
+    round: 21,
+    dateLabel: '2027.11 上',
+    boardName: '[Alliance / TPP] 君悅 2.0 終極藍白合談判桌',
+    title: '十一月登記前死線：藍白到底合不合？簡訊要不要現場唸出來？',
+    situationBrief:
+      '距離中選會總統登記僅剩最後一週！柯文哲與黃國昌開出「聯合內閣＋法務與NCC全交白營」條件，彷彿 2023 君悅飯店惡夢重演！',
+    ccpNotice: '北京涉台系統屏息關注藍白是否分裂。',
+    japanNotice: '東京政界分析若整合成功則台灣政黨輪替機率大增。',
+    rivalPost: {
+      platform: 'PTT 八卦版',
+      authorName: '柯文哲',
+      authorRole: '民眾黨創黨主席 · 關鍵變數',
+      authorHandle: 'KP_Taiwan',
+      portraitKey: 'ko',
+      headline: '[爆卦] 政黨合作要公開透明，不是密室分贓！我們要聯合政府不是當小弟。',
+      body: '「如果國民黨還是想大黨壓小黨、不肯接受聯合執政協議，那我們就各自登山！」',
+      likesLabel: '推: 爆 · 十萬網友線上吃瓜',
+    },
+    choices: [
+      {
+        id: 'r21_grand_coalition',
+        toneLabel: '大格局禮讓',
+        label: '牙一咬讓步！簽下「藍白聯合內閣＋白營主導法務與數位部」，促成終極藍白合！',
+        speechText:
+          '「為了終結民進黨一黨獨大，個人與單一政黨利益都能放下！我正式邀請民眾黨共組聯合政府！」',
+        hint: '全台白營票倉大舉灌入藍營（竹科、桃園、台中），深藍微怒！',
+        statDelta: { unity: -7, momentum: 16, funds: 9, ccpTension: 2, japanPosture: 2 },
+        swing: {
+          north: 2.8,
+          central: 3.1,
+          south: 1.5,
+          east: 1.0,
+          tppShift: -9.5,
+          specificCounties: { 新竹市: 6.5, 新竹縣: 5.5, 台中市: 4.2, 桃園市: 3.8 },
+        },
+        setFlags: ['blue_white_coalition_success'],
+        pushReactions: [
+          { type: '推', author: 'tpp_taipei', text: '幹！這次真的成了！！賴清德準備打包下台！' },
+        ],
+        mediaReaction: '歷史性同框震驚政壇！藍白合體後民調瞬間拉鋸超前！',
+      },
+      {
+        id: 'r21_walkout_solo',
+        toneLabel: '君悅翻桌2.0',
+        label: '直接公開對方私訊當場翻桌單挑：「國民黨不需要看小黨臉色！」',
+        speechText:
+          '「政黨合作不是讓你勒索的！國民黨有十四個執政縣市，我們堂堂正正自己贏！」',
+        hint: '深藍團結滿格，但三腳督格局鎖死！',
+        statDelta: { unity: 14, momentum: 8, funds: 7, ccpTension: 0, japanPosture: 2 },
+        swing: { north: 0.4, central: 0.4, east: 1.2, tppShift: 2.5 },
+        setFlags: ['junyue_walkout_2'],
+        pushReactions: [
+          { type: '推', author: 'blue_steel', text: '爽啦！早就該硬起來了，每次被小黨吃死死' },
+          { type: '噓', author: 'anti_dpp_voter', text: '恭喜賴清德躺著連任，你們繼續吵' },
+        ],
+        mediaReaction: '君悅2.0直播觀看人數破三十萬，賴清德競選總部傳出掌聲。',
+      },
+      {
+        id: 'r21_tpp_poaching',
+        toneLabel: '挖牆腳大戰',
+        label: '表面握手談整合、私下狂挖白營地方主委與議員帶槍投靠！',
+        speechText:
+          '「我們歡迎所有認同下架民進黨的志士加入團隊，大門永遠敞開！」',
+        hint: '搶走部分白營組織票，黃國昌氣到青筋暴起全面反撲。',
+        statDelta: { unity: 4, momentum: 8, funds: 10, ccpTension: 0, japanPosture: 0 },
+        swing: { north: 1.2, central: 1.3, south: 0.5, tppShift: -2.0 },
+        setFlags: ['tpp_poaching_war'],
+        pushReactions: [
+          { type: '噓', author: 'kc_huang_fan', text: '無恥挖牆腳！太離譜了！！全面開戰到底！' },
+        ],
+        mediaReaction: '白營地方議員陸續跳船，鐵粉憤怒誓言「絕不投藍」。',
+      },
+    ],
+  },
+  {
+    round: 22,
+    dateLabel: '2027.11 下',
+    boardName: '[Scandal / Deepfake] 選前神秘深偽音檔與黑函來襲',
+    title: '民調封關倒數：匿名爆料粉專丟出「疑似候選人密室談話變造錄音」！',
+    situationBrief:
+      '選前最後六週，突然出現一段音質模糊的「秘密錄音」，指控你私下答應神秘金主與境外勢力交換條件！脆與政論節目連夜開箱鑑定。',
+    ccpNotice: '大陸網軍完全隱身觀望，避免在最後關頭留把柄。',
+    japanNotice: '國際事實查核組織與美日智庫注意台灣 AI 假訊息介選狀況。',
+    rivalPost: {
+      platform: 'PTT 政黑版',
+      authorName: '賴清德',
+      authorRole: '民進黨立院黨團聯合召開',
+      authorHandle: '@dpp_caucus',
+      portraitKey: 'lai',
+      headline: '[新聞] 針對疑似藍營密室錄音流出，執政黨團要求當事人 24 小時內說清楚！',
+      body: '「這段錄音涉及重大利益交換與國安疑慮，候選人不能躲在幕僚背後！」',
+      likesLabel: '5.5萬轉發 · 選前大地震',
+    },
+    choices: [
+      {
+        id: 'r22_ai_parody',
+        toneLabel: 'AI 反串核彈',
+        label: '現場用 AI 生成一段「賴清德跟黃國昌合唱夜襲」反諷：有本事比對聲紋啊！',
+        speechText:
+          '「2027 年誰不會用 AI 變聲？連賴清德都能被我做成唱《夜襲》了！這種低級假錄音還敢拿出來騙三歲小孩？明天提告刑事局！」',
+        hint: '神級科技反殺！脆友笑翻天、瞬間瓦解抹黑攻勢！',
+        statDelta: { unity: 6, momentum: 16, funds: 3, ccpTension: 0, japanPosture: 4 },
+        swing: { north: 1.2, central: 1.1, south: 0.6, dppShift: -1.0 },
+        setFlags: ['ai_parody_counter'],
+        pushReactions: [
+          { type: '推', author: 'ai_engineer', text: '幹 現場放賴清德唱夜襲AI檔太賤太好笑了，抹黑瞬間失效' },
+        ],
+        mediaReaction: 'AI 合唱惡搞音檔意外洗掉負面新聞，民調完全沒受傷甚至小升。',
+      },
+      {
+        id: 'r22_press_sworn',
+        toneLabel: '切結自清',
+        label: '公開交出手機通聯與公開行程紀錄自清：「若有任何一字屬實立刻退選！」',
+        speechText:
+          '「我行得正坐得端，請檢調三天內給全國人民一個交代！」',
+        hint: '穩住中立選民信任度，安全止血。',
+        statDelta: { unity: 5, momentum: 3, funds: 4, ccpTension: 0, japanPosture: 4 },
+        swing: { north: 0.7, central: 0.7, south: 0.3 },
+        pushReactions: [
+          { type: '推', author: 'fair_voter', text: '敢直接交給檢調查就算有肩膀' },
+        ],
+        mediaReaction: '司法機關立案調查，選情趨於穩定。',
+      },
+      {
+        id: 'r22_hou_ignore',
+        toneLabel: '八字真言',
+        label: '不管記者怎麼逼問，全程只笑回「選舉奧步，侯侯做代誌」重複八次！',
+        speechText:
+          '「這就是選舉奧步，我們侯侯做代誌、團結為台灣、侯侯做代誌！」',
+        hint: '長輩很放心、年輕人剪成鬼畜洗腦曲！',
+        statDelta: { unity: 2, momentum: 8, funds: 3, ccpTension: 0, japanPosture: 0 },
+        swing: { north: 0.4, central: 0.5, specificCounties: { 新北市: 1.2 } },
+        setFlags: ['hou_eight_words'],
+        pushReactions: [
+          { type: '推', author: 'meme_dj', text: 'DJ 已經把「侯侯做代誌」做成電音混音版了' },
+        ],
+        mediaReaction: '雖然政論節目傻眼，但對手也找不到新破口繼續打。',
+      },
+    ],
+  },
+  {
+    round: 23,
+    dateLabel: '2027.12 上',
+    boardName: '[Rally / FinalSprint] 凱道選前造勢夜雨大合唱',
+    title: '倒數第二關：藍營全黨諸侯大會師！要走溫情合唱還是戰鬥檢討？',
+    situationBrief:
+      '進入投票倒數最後一個月，台中、新北、台北與高雄四大主場同時舉辦十萬人造勢。黨內各山頭齊聚一堂，全場等待你的最後衝刺路線。',
+    ccpNotice: '對岸涉台頻道全面關注造勢人潮規模。',
+    japanNotice: '日媒駐台各分社開始製作 2028 大選前瞻專題。',
+    rivalPost: {
+      platform: 'Threads 脆',
+      authorName: '蕭美琴',
+      authorRole: '民進黨全台車掃動員',
+      authorHandle: '@bikhim_tw',
+      portraitKey: 'hsiao',
+      headline: '人民的雙腳站在這片土地上！最後衝刺，請投給讓台灣繼續前進的團隊！',
+      body: '「從屏東掃到台北，我們看見台灣人堅定守護自由的眼神！」',
+      likesLabel: '6.9萬愛心 · 藍綠動員總車拚',
+    },
+    choices: [
+      {
+        id: 'r23_all_star_rally',
+        toneLabel: '大合唱動員',
+        label: '邀集盧、蔣、韓、趙、侯、朱、鄭、傅、馬九人同台合唱《中華民國頌》！',
+        speechText:
+          '「今天沒有派系之分，只有一個共同的名字叫做中華民國！我們一起走進重慶南路！」',
+        hint: '黨內團結與糧草大補血，中北部及東台灣同步催出基本盤！',
+        statDelta: { unity: 15, momentum: 9, funds: 10, ccpTension: 2, japanPosture: 2 },
+        swing: { north: 1.0, central: 1.2, south: 0.6, east: 1.4, islands: 1.2 },
+        pushReactions: [
+          { type: '推', author: 'blue_rally', text: '九大諸侯同台排排站畫面太震撼了，氣勢回來了' },
+        ],
+        mediaReaction: '空拍紅藍旗海畫面登上所有電視台頭條。',
+      },
+      {
+        id: 'r23_youth_concert',
+        toneLabel: '電音造勢',
+        label: '把凱道改成「反網軍搖滾電音趴」，請樂團唱爆全場搶青年票！',
+        speechText:
+          '「年輕人不是綠營專利！今天凱道不講八股，我們用音樂跟選票改變台灣！」',
+        hint: '吸走大量白營與中間年輕票，深藍長輩在台下捂耳朵。',
+        statDelta: { unity: -3, momentum: 14, funds: -4, ccpTension: 0, japanPosture: 4 },
+        swing: { north: 1.3, central: 1.0, tppShift: -1.6 },
+        pushReactions: [
+          { type: '推', author: 'indie_kid', text: '凱道電音趴比聽老人唸稿爽一萬倍啦' },
+        ],
+        mediaReaction: '青年投票意願大幅上升，但幾個眷村里長現場提前離席。',
+      },
+      {
+        id: 'r23_south_sweep',
+        toneLabel: '苦行南台灣',
+        label: '親自從雲林、嘉義、台南一路徒步掃街到高雄，「打破濁水溪魔咒！」',
+        speechText:
+          '「國民黨不能永遠只在台北吹冷氣！南部鄉親的苦，我用雙腳陪你們走一遍！」',
+        hint: '南台灣與中部農業縣大幅止血反彈！',
+        statDelta: { unity: 6, momentum: 8, funds: 4, ccpTension: 0, japanPosture: 2 },
+        swing: { south: 2.2, central: 1.1, specificCounties: { 高雄市: 2.4, 台南市: 2.0, 屏東縣: 1.8 } },
+        pushReactions: [
+          { type: '推', author: 'khh_taxi', text: '願意下來走太陽曬到黑給點尊重，這票有考慮' },
+        ],
+        mediaReaction: '高雄與台南地方組織士氣大振，綠營緊急回防南台灣。',
+      },
+    ],
+  },
+  {
+    round: 24,
+    dateLabel: '2027.12 下',
+    boardName: '[ElectionEve / Final] 選前最後一夜：重慶南路一段122號決戰！',
+    title: '最終回合：選前之夜凱道五十萬人！對岸與美日屏息以待，最後一擊！',
+    situationBrief:
+      '2027 年最後一夜，全台灣兩千三百萬人的目光聚焦於此！賴清德在北平東路喊出最後防線，你的最終演說將直接決定明天的開票命運！',
+    ccpNotice: '對岸網評員突然全面靜默，僅剩東部戰區發布模糊實彈預告。',
+    japanNotice: '美日同盟高層同時重申「反對任何單方面武力改變台海與東海現狀」。',
+    rivalPost: {
+      platform: 'Threads 脆',
+      authorName: '賴清德',
+      authorRole: '選前之夜總動員 · 民進黨',
+      authorHandle: '@williamlai_tw',
+      portraitKey: 'lai',
+      headline: '守住台灣民主最後一道防線！絕不能讓極權黑手透過選舉奪走我們的未來！',
+      body: '「明天走進投票所，決定台灣要走向世界民主陣營，還是走回威權與親中老路！」',
+      likesLabel: '9.8萬愛心 · 選前最後夜決戰',
+    },
+    choices: [
+      {
+        id: 'r24_kmt_122_speech',
+        toneLabel: '終極誓詞',
+        label: '吼破麥克風：「國民黨萬歲！三民主義萬歲！中華民國萬歲！明天奪回重慶南路一段122號！」',
+        speechText:
+          '「這一年他們用萊豬、缺電、網軍跟恐懼綁架台灣！今天我們用選票告訴全世界：國民黨萬歲！三民主義萬歲！中華民國萬歲！」',
+        hint: '全藍營催票率飆到極限！正面決戰重慶南路一段122號！',
+        statDelta: { unity: 12, momentum: 14, funds: 5, ccpTension: 4, japanPosture: 0 },
+        swing: { north: 1.5, central: 1.7, south: 1.0, east: 1.8, islands: 1.6, dppShift: -1.3 },
+        setFlags: ['final_122_charge'],
+        pushReactions: [
+          { type: '推', author: 'ketagalan_blue', text: '凱道旗海看不到盡頭！三民主義萬歲！明天投票！！' },
+        ],
+        mediaReaction: '凱道與台中雙主場空拍震撼全台，藍營催票率衝上近十年最高峰。',
+      },
+      {
+        id: 'r24_calm_appeal',
+        toneLabel: '溫情家書',
+        label: '收起砲火改打溫情家書：「為了孩子與台海和平，請給台灣一次政黨輪替」',
+        speechText:
+          '「我們不需要更多仇恨與對立。請為家裡的長輩、為台海和平，投下理性政黨輪替的一票！」',
+        hint: '強力吸納淺綠厭倦票與中間婦女票，穩定美日態度。',
+        statDelta: { unity: 5, momentum: 8, funds: 4, ccpTension: -5, japanPosture: 7 },
+        swing: { north: 1.5, central: 1.6, south: 1.1, dppShift: -1.5, tppShift: -0.8 },
+        pushReactions: [
+          { type: '推', author: 'swing_voter_tw', text: '講得很好，真的受夠天天政治仇恨動員了' },
+        ],
+        mediaReaction: '頭版溫情全版廣告讓婦女與中間選民投票意願大幅升高。',
+      },
+      {
+        id: 'r24_nuclear_meme_gamble',
+        toneLabel: '終極吐槽趴',
+        label: '不唸八股文！把凱道變「PTT 脆友聯合吐槽大會」直到凌晨放鞭炮！',
+        speechText:
+          '「今晚不唸稿！全場一起大聲唸出今年所有的雙標金句跟松鼠梗，誰笑最大聲誰就贏！」',
+        hint: '極端混沌操作：聲量破表但長輩票大震盪，極易觸發神展開隱藏結局！',
+        statDelta: { unity: -7, momentum: 22, funds: -5, ccpTension: 5, japanPosture: -5 },
+        swing: { north: 1.0, central: -0.6, south: -1.2, tppShift: -1.8 },
+        setFlags: ['final_chaos_meme'],
+        pushReactions: [
+          { type: '推', author: 'ptt_chaos', text: '這場選前之夜載入史冊了哈哈哈哈 根本全國脫口秀' },
+        ],
+        mediaReaction: '外媒記者完全看不懂舞台上的 PTT 梗圖投影，網路直播湧入五十萬人。',
+      },
+    ],
+  },
+];
+
+export function getRoundEventForFaction(roundIndex: number, factionId: FactionId): RoundEvent {
+  const base = CAMPAIGN_ROUNDS[roundIndex] ?? CAMPAIGN_ROUNDS[0];
+  const personal = PERSONAL_ROUND_OVERRIDES[factionId]?.[base.round];
+  return personal ?? base;
+}

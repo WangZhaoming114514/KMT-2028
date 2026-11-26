@@ -1,0 +1,163 @@
+import { EndingDefinition, GameEvaluationContext } from '../types/game';
+import { ENDINGS_BASE } from './endingsList';
+
+export const ENDINGS = ENDINGS_BASE;
+
+const STORAGE_KEY = 'kmt2028_unlocked_endings_v1';
+
+export function loadUnlockedEndings(): Record<number, string> {
+  if (typeof window === 'undefined') return {};
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return {};
+    return JSON.parse(raw) as Record<number, string>;
+  } catch {
+    return {};
+  }
+}
+
+export function saveUnlockedEnding(endingId: number): Record<number, string> {
+  const current = loadUnlockedEndings();
+  if (!current[endingId]) {
+    current[endingId] = new Date().toISOString();
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(current));
+    } catch {
+      // ignore quota errors
+    }
+  }
+  return current;
+}
+
+export function shouldTriggerStraitWar(ctx: {
+  round: number;
+  ccpTension: number;
+  flags: string[];
+  warAlreadyFought: boolean;
+}): boolean {
+  if (ctx.warAlreadyFought) return false;
+  // CCP invades Taiwan if tension crosses 82+, OR if Project Guoguang was loudly restarted and tension crosses 68+
+  if (ctx.ccpTension >= 82 && ctx.round >= 6) return true;
+  if (ctx.flags.includes('guoguang_restarted') && ctx.round >= 14 && ctx.ccpTension >= 68) {
+    return true;
+  }
+  return false;
+}
+
+export function checkMidGameEnding(ctx: GameEvaluationContext): EndingDefinition | null {
+  const { stats, flags, round } = ctx;
+  const find = (id: number) => ENDINGS.find((e) => e.id === id)!;
+
+  // Immediate Midnight Livestream Disaster if unity craters severely
+  if (flags.includes('midnight_livestream_crash') && stats.unity <= 28) {
+    return find(26);
+  }
+  // Immediate "Swap Candidate 2.0" on severe unity collapse
+  if (round >= 12 && stats.unity <= 18) {
+    return find(29);
+  }
+  // Extreme Japan/US Trust Collapse
+  if (round >= 16 && stats.japanPosture <= 12) {
+    return find(20);
+  }
+  return null;
+}
+
+export function evaluateFinalEnding(ctx: GameEvaluationContext): EndingDefinition {
+  const { factionId, stats, nationalShares, counties, flags } = ctx;
+  const find = (id: number) => ENDINGS.find((e) => e.id === id)!;
+
+  const kmtWon =
+    nationalShares.kmt >= nationalShares.dpp && nationalShares.kmt >= nationalShares.tpp;
+  const tppWon =
+    nationalShares.tpp > nationalShares.kmt && nationalShares.tpp > nationalShares.dpp;
+
+  const getCounty = (name: string) => counties.find((c) => c.id === name);
+  const hualienKmt = getCounty('花蓮縣')?.current.kmt ?? 50;
+  const miaoliKmt = getCounty('苗栗縣')?.current.kmt ?? 41;
+
+  // 1. Extreme Chaos / Secret Meme Endings
+  const chaosCount = [
+    flags.includes('love_power_meme'),
+    flags.includes('final_chaos_meme'),
+    flags.includes('midnight_livestream_crash'),
+    flags.includes('chongqing_1949_meme'),
+    flags.includes('boba_diplomacy'),
+    flags.includes('venice_dome_meme'),
+  ].filter(Boolean).length;
+
+  if (chaosCount >= 3 && !kmtWon) {
+    return find(30);
+  }
+
+  // PTT-Threads Rule Ending
+  if (stats.momentum >= 90 && (stats.unity <= 40 || stats.funds <= 32)) {
+    return find(21);
+  }
+
+  // Hong Kong Restoration via high international posture + HK flag
+  if (flags.includes('hk_restoration') && stats.japanPosture >= 72 && (kmtWon || stats.momentum >= 88)) {
+    return find(16);
+  }
+
+  // 1949 Chongqing Airport Mix-up
+  if (flags.includes('chongqing_1949_meme') && !kmtWon) {
+    return find(27);
+  }
+
+  // TPP Roar Miracle
+  if (tppWon) {
+    return find(25);
+  }
+
+  // Taipei Dome Venice
+  if (flags.includes('venice_dome_meme') && (flags.includes('love_power_meme') || flags.includes('squirrel_meme_master')) && !kmtWon) {
+    return find(24);
+  }
+
+  // Ma Ying-jeou Death Grip
+  if (flags.includes('death_grip_activated') && factionId === 'ma' && kmtWon) {
+    return find(22);
+  }
+
+  // Hou Yu-ih 8-Words Loop
+  if (flags.includes('hou_eight_words') && factionId === 'hou' && kmtWon && stats.unity >= 70) {
+    return find(23);
+  }
+
+  // Miaoli Kingdom Independence (Miaoli + Hualien local faction runaway when losing national)
+  if (!kmtWon && ((flags.includes('hualien_kingdom') && miaoliKmt >= 46) || (hualienKmt >= 58 && miaoliKmt >= 45))) {
+    return find(28);
+  }
+
+  // 2. Geopolitical Non-War Endings
+  if (stats.ccpTension <= 18 && stats.japanPosture <= 25) {
+    return find(19);
+  }
+  if (stats.japanPosture <= 16) {
+    return find(20);
+  }
+  if (kmtWon && stats.japanPosture >= 80 && stats.ccpTension >= 68) {
+    return find(18);
+  }
+
+  // 3. Victory Endings
+  if (kmtWon) {
+    if (nationalShares.kmt >= 47) return find(2);
+    if (nationalShares.kmt - nationalShares.dpp < 1.5) return find(8);
+    if (flags.includes('blue_white_coalition_success')) return find(3);
+    if (factionId === 'chiang') return find(5);
+    if (flags.includes('final_122_charge') && nationalShares.kmt >= 42.5) return find(1);
+    if (factionId === 'han') return find(6);
+    if (factionId === 'jaw') return find(7);
+    return find(4);
+  }
+
+  // 4. Defeat Endings
+  if (stats.unity < 35) return find(11);
+  if (stats.funds < 25) return find(13);
+  if (stats.momentum < 35) return find(12);
+  if (flags.includes('junyue_walkout_2')) return find(10);
+  if (nationalShares.dpp - nationalShares.kmt <= 3.0) return find(14);
+  return find(9);
+}
