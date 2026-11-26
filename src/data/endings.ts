@@ -76,6 +76,16 @@ export function evaluateFinalEnding(ctx: GameEvaluationContext): EndingDefinitio
   const hualienKmt = getCounty('花蓮縣')?.current.kmt ?? 50;
   const miaoliKmt = getCounty('苗栗縣')?.current.kmt ?? 41;
 
+  // Project Guoguang Full Victory cannot be overridden once achieved
+  if (flags.includes('guoguang_victory')) {
+    return find(15);
+  }
+
+  // Hong Kong Restoration via war victory
+  if (flags.includes('war_hk_victory')) {
+    return find(16);
+  }
+
   // 1. Extreme Chaos / Secret Meme Endings
   const chaosCount = [
     flags.includes('love_power_meme'),
@@ -84,6 +94,7 @@ export function evaluateFinalEnding(ctx: GameEvaluationContext): EndingDefinitio
     flags.includes('chongqing_1949_meme'),
     flags.includes('boba_diplomacy'),
     flags.includes('venice_dome_meme'),
+    flags.includes('diaoyu_transferred'),
   ].filter(Boolean).length;
 
   if (chaosCount >= 3 && !kmtWon) {
@@ -130,14 +141,14 @@ export function evaluateFinalEnding(ctx: GameEvaluationContext): EndingDefinitio
     return find(28);
   }
 
-  // 2. Geopolitical Non-War Endings
+  // 2. Geopolitical Non-War / War-Defense Endings
   if (stats.ccpTension <= 18 && stats.japanPosture <= 25) {
     return find(19);
   }
   if (stats.japanPosture <= 16) {
     return find(20);
   }
-  if (kmtWon && stats.japanPosture >= 80 && stats.ccpTension >= 68) {
+  if (kmtWon && (flags.includes('war_defense_victory') || (stats.japanPosture >= 78 && (stats.ccpTension >= 68 || flags.includes('diaoyu_transferred'))))) {
     return find(18);
   }
 

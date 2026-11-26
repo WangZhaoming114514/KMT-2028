@@ -1,4 +1,8 @@
-import { INITIAL_COUNTIES } from '../data/counties';
+import {
+  HK_TEMPORARY_COUNTIES,
+  INITIAL_COUNTIES,
+  MAINLAND_TEMPORARY_COUNTIES,
+} from '../data/counties';
 import {
   CampaignStats,
   ChoiceOption,
@@ -83,6 +87,99 @@ export function applyChoiceToCounties(
   });
 }
 
+const PROVINCE_TO_COUNTY_ID: Record<
+  'guangdong' | 'minnan' | 'minbei' | 'shanghai_zhejiang' | 'nanjing',
+  string
+> = {
+  minnan: '閩南廈漳泉臨時選區',
+  minbei: '閩北福州臨時選區',
+  guangdong: '廣東行憲臨時選區',
+  shanghai_zhejiang: '上海浙江臨時選區',
+  nanjing: '南京首都特別選區',
+};
+
+export type CapturedMainlandProvinceKey = keyof typeof PROVINCE_TO_COUNTY_ID;
+
+export function applyWarVictoryOutcomeToCounties(
+  counties: CountyState[],
+  endingId: 15 | 16 | 17 | 18,
+  capturedProvinces: CapturedMainlandProvinceKey[] = [],
+  capturedHk: boolean = false
+): CountyState[] {
+  // If Taiwan fell (ending 17), remove temporary districts if any and freeze
+  if (endingId === 17) {
+    return counties.filter((c) => !c.isTemporary);
+  }
+
+  // Massive patriotic & victory vote surge across Taiwan for defeating the CCP
+  const kmtBoost = endingId === 15 ? 20 : endingId === 16 ? 13.5 : 9.5;
+  const boosted = counties.map((c) => {
+    const next = normalizeShares(
+      c.current.kmt + kmtBoost,
+      c.current.dpp - kmtBoost * 0.62,
+      c.current.tpp - kmtBoost * 0.38
+    );
+    return {
+      ...c,
+      current: next,
+      deltaKmt: Number((next.kmt - c.current.kmt).toFixed(2)),
+    };
+  });
+
+  const existingIds = new Set(boosted.map((c) => c.id));
+  const extra: CountyState[] = [];
+
+  if (endingId === 15 || endingId === 16 || capturedHk) {
+    for (const hk of HK_TEMPORARY_COUNTIES) {
+      if (!existingIds.has(hk.id)) extra.push({ ...hk });
+    }
+  }
+  if (endingId === 15) {
+    for (const ml of MAINLAND_TEMPORARY_COUNTIES) {
+      if (!existingIds.has(ml.id)) extra.push({ ...ml });
+    }
+  } else if (capturedProvinces.length > 0) {
+    const wantedIds = new Set(capturedProvinces.map((p) => PROVINCE_TO_COUNTY_ID[p]));
+    for (const ml of MAINLAND_TEMPORARY_COUNTIES) {
+      if (wantedIds.has(ml.id) && !existingIds.has(ml.id)) {
+        extra.push({ ...ml });
+      }
+    }
+  }
+
+  return [...boosted, ...extra];
+}
+
+export function appendTemporaryDistrictsForFlags(
+  counties: CountyState[],
+  flags: string[]
+): CountyState[] {
+  const existingIds = new Set(counties.map((c) => c.id));
+  const extra: CountyState[] = [];
+  if (
+    flags.includes('hk_restoration') ||
+    flags.includes('war_hk_victory') ||
+    flags.includes('guoguang_victory')
+  ) {
+    for (const hk of HK_TEMPORARY_COUNTIES) {
+      if (!existingIds.has(hk.id)) extra.push({ ...hk });
+    }
+  }
+  if (flags.includes('guoguang_victory')) {
+    for (const ml of MAINLAND_TEMPORARY_COUNTIES) {
+      if (!existingIds.has(ml.id)) extra.push({ ...ml });
+    }
+  } else {
+    for (const [provKey, countyId] of Object.entries(PROVINCE_TO_COUNTY_ID)) {
+      if (flags.includes(`captured_prov_${provKey}`) && !existingIds.has(countyId)) {
+        const found = MAINLAND_TEMPORARY_COUNTIES.find((ml) => ml.id === countyId);
+        if (found) extra.push({ ...found });
+      }
+    }
+  }
+  return extra.length > 0 ? [...counties, ...extra] : counties;
+}
+
 export function computeNationalShares(counties: CountyState[]): VoteShares {
   let kmt = 0;
   let dpp = 0;
@@ -99,3 +196,4 @@ export function computeNationalShares(counties: CountyState[]): VoteShares {
   if (totalWeight <= 0) return { kmt: 33.5, dpp: 40.0, tpp: 26.5 };
   return normalizeShares(kmt / totalWeight, dpp / totalWeight, tpp / totalWeight);
 }
+

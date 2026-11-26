@@ -22,7 +22,7 @@ export interface VoteShares {
 }
 
 export interface CountyState {
-  id: string; // e.g. '台北市'
+  id: string; // e.g. '台北市' or '香港行憲特別選區'
   code: string;
   region: RegionKey;
   electorateWeight: number;
@@ -31,6 +31,8 @@ export interface CountyState {
   deltaKmt: number;
   factionNote: string;
   keyIssue: string;
+  isTemporary?: boolean;
+  theaterTag?: 'TAIWAN' | 'HK' | 'MAINLAND';
 }
 
 export interface CampaignStats {

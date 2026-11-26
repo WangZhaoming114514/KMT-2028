@@ -1,5 +1,19 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Volume2, VolumeX, BookOpen, RotateCcw, Radio, ShieldAlert } from 'lucide-react';
+import {
+  Volume2,
+  VolumeX,
+  BookOpen,
+  RotateCcw,
+  Radio,
+  ShieldAlert,
+  Heart,
+  MessageCircle,
+  Repeat2,
+  Send,
+  BadgeCheck,
+  MoreHorizontal,
+  Plus,
+} from 'lucide-react';
 import { FACTION_LEADERS } from './data/factions';
 import { CAMPAIGN_ROUNDS, getRoundEventForFaction } from './data/rounds';
 import {
@@ -21,7 +35,9 @@ import {
   MapMode,
 } from './types/game';
 import {
+  appendTemporaryDistrictsForFlags,
   applyChoiceToCounties,
+  applyWarVictoryOutcomeToCounties,
   clampStat,
   computeNationalShares,
   initCountiesForFaction,
@@ -55,7 +71,9 @@ export default function App() {
   const [muted, setMuted] = useState<boolean>(false);
   const [tallyRevealCount, setTallyRevealCount] = useState<number>(0);
   const [warAlreadyFought, setWarAlreadyFought] = useState<boolean>(false);
+  const [warLaunchedFromTitle, setWarLaunchedFromTitle] = useState<boolean>(false);
   const [warOccupiedCounties, setWarOccupiedCounties] = useState<string[] | undefined>(undefined);
+  const [feedTab, setFeedTab] = useState<'THREADS' | 'PTT'>('THREADS');
 
   const activeFaction = useMemo(
     () => FACTION_LEADERS.find((f) => f.id === selectedFactionId) ?? FACTION_LEADERS[0],
@@ -97,6 +115,7 @@ export default function App() {
       setActiveEnding(null);
       setTallyRevealCount(0);
       setWarAlreadyFought(false);
+      setWarLaunchedFromTitle(false);
       setWarOccupiedCounties(undefined);
       setBbsLog([
         {
@@ -120,6 +139,7 @@ export default function App() {
     setStats({ ...leader.startingStats, ccpTension: 88 });
     setFlags(['guoguang_restarted']);
     setWarAlreadyFought(true);
+    setWarLaunchedFromTitle(true);
     setWarOccupiedCounties(undefined);
     setPhase('STRAIT_WAR');
   }, [activeFaction]);
@@ -158,19 +178,28 @@ export default function App() {
 
   const handleSelectChoice = useCallback(
     (choice: ChoiceOption) => {
+      const nextFlags = choice.setFlags
+        ? Array.from(new Set([...flags, ...choice.setFlags]))
+        : flags;
+
+      const guoguangWon = nextFlags.includes('guoguang_victory');
+      const warCcpCrushed =
+        guoguangWon ||
+        nextFlags.includes('war_hk_victory') ||
+        nextFlags.includes('war_defense_victory');
+
       const nextStats: CampaignStats = {
         unity: clampStat(stats.unity + (choice.statDelta.unity ?? 0)),
         momentum: clampStat(stats.momentum + (choice.statDelta.momentum ?? 0)),
         funds: clampStat(stats.funds + (choice.statDelta.funds ?? 0)),
-        ccpTension: clampStat(stats.ccpTension + (choice.statDelta.ccpTension ?? 0)),
+        ccpTension: warCcpCrushed
+          ? 0
+          : clampStat(stats.ccpTension + (choice.statDelta.ccpTension ?? 0)),
         japanPosture: clampStat(stats.japanPosture + (choice.statDelta.japanPosture ?? 0)),
       };
 
       const nextCounties = applyChoiceToCounties(counties, choice, activeFaction, nextStats);
       const nextNational = computeNationalShares(nextCounties);
-      const nextFlags = choice.setFlags
-        ? Array.from(new Set([...flags, ...choice.setFlags]))
-        : flags;
 
       const positiveNet =
         nextNational.kmt >= nationalShares.kmt && nextStats.ccpTension < 75;
@@ -220,23 +249,25 @@ export default function App() {
         return;
       }
 
-      // Check mid-game crisis/meme triggers
-      const midEnding = checkMidGameEnding({
-        factionId: activeFaction.id,
-        round: currentRound.round,
-        stats: nextStats,
-        nationalShares: nextNational,
-        counties: nextCounties,
-        flags: nextFlags,
-        midGameTrigger: true,
-      });
+      // Check mid-game crisis/meme triggers (do not overwrite Guoguang victory!)
+      const midEnding = guoguangWon
+        ? null
+        : checkMidGameEnding({
+            factionId: activeFaction.id,
+            round: currentRound.round,
+            stats: nextStats,
+            nationalShares: nextNational,
+            counties: nextCounties,
+            flags: nextFlags,
+            midGameTrigger: true,
+          });
 
       if (midEnding) {
         finishWithEnding(midEnding, false);
         return;
       }
 
-      // Check if Round 12 just finished
+      // Check if Final Round 24 just finished
       if (roundIndex >= CAMPAIGN_ROUNDS.length - 1) {
         const finalEnding = evaluateFinalEnding({
           factionId: activeFaction.id,
@@ -247,6 +278,11 @@ export default function App() {
           flags: nextFlags,
           midGameTrigger: false,
         });
+        if (finalEnding.id === 15 || finalEnding.id === 16) {
+          const tempFlags =
+            finalEnding.id === 15 ? ['guoguang_victory', 'hk_restoration'] : ['hk_restoration'];
+          setCounties((prev) => appendTemporaryDistrictsForFlags(prev, tempFlags));
+        }
         finishWithEnding(finalEnding, true);
         return;
       }
@@ -406,17 +442,35 @@ export default function App() {
                 </span>
               </div>
               <div className="flex items-center justify-between bg-[#101622] px-2.5 py-1 border border-[#1E293B]">
-                <span className="text-slate-400">中共壓力</span>
+                <span className="text-slate-400">
+                  {flags.includes('guoguang_victory')
+                    ? '大陸戰況'
+                    : flags.includes('war_hk_victory') || flags.includes('war_defense_victory')
+                      ? '台海戰況'
+                      : '中共壓力'}
+                </span>
                 <span
                   className={`font-bold ${
-                    stats.ccpTension >= 75 ? 'text-red-400' : 'text-slate-200'
+                    flags.includes('guoguang_victory')
+                      ? 'text-blue-400'
+                      : flags.includes('war_hk_victory') || flags.includes('war_defense_victory')
+                        ? 'text-cyan-300'
+                        : stats.ccpTension >= 75
+                          ? 'text-red-400'
+                          : 'text-slate-200'
                   }`}
                 >
-                  {stats.ccpTension}%
+                  {flags.includes('guoguang_victory')
+                    ? '0% 三民主義統一'
+                    : flags.includes('war_hk_victory') || flags.includes('war_defense_victory')
+                      ? '0% 共軍全滅'
+                      : `${stats.ccpTension}%`}
                 </span>
               </div>
               <div className="flex items-center justify-between bg-[#101622] px-2.5 py-1 border border-[#1E293B]">
-                <span className="text-slate-400">美日態度</span>
+                <span className="text-slate-400">
+                  {flags.includes('us_jp_kr_pact') ? '美日韓共防' : '美日韓態度'}
+                </span>
                 <span
                   className={`font-bold ${
                     stats.japanPosture <= 25 ? 'text-rose-400' : 'text-cyan-300'
@@ -473,52 +527,130 @@ export default function App() {
                 {/* CCP & Japan Regional Brief */}
                 <div className="mt-3.5 grid grid-cols-1 gap-2 border-t border-[#1E293B] pt-3 text-xs sm:grid-cols-2">
                   <div className="flex items-start gap-2 text-rose-200/90">
-                    <ShieldAlert className="mt-0.5 h-3.5 w-3.5 shrink-0 text-rose-400" />
+                    <ShieldAlert
+                      className={`mt-0.5 h-3.5 w-3.5 shrink-0 ${
+                        flags.includes('guoguang_victory') ? 'text-blue-400' : 'text-rose-400'
+                      }`}
+                    />
                     <span>
-                      <strong className="text-rose-300">北京／台海：</strong>
-                      {currentRound.ccpNotice}
+                      <strong
+                        className={
+                          flags.includes('guoguang_victory')
+                            ? 'text-blue-300'
+                            : flags.includes('war_hk_victory') ||
+                                flags.includes('war_defense_victory')
+                              ? 'text-sky-300'
+                              : 'text-rose-300'
+                        }
+                      >
+                        {flags.includes('guoguang_victory')
+                          ? '三民主義統一中國：'
+                          : flags.includes('war_hk_victory') ||
+                              flags.includes('war_defense_victory')
+                            ? '台海戰後局勢：'
+                            : '北京／台海：'}
+                      </strong>
+                      {flags.includes('guoguang_victory')
+                        ? '中共政權已於國光大捷瓦解，中國大陸五省與香港行憲臨時選區全面籌備 2028 大選開票中。'
+                        : flags.includes('war_hk_victory') || flags.includes('war_defense_victory')
+                          ? '共軍渡海主力已被我軍殲滅潰敗，封鎖線全面解除，台海制海權穩固。'
+                          : currentRound.ccpNotice}
                     </span>
                   </div>
                   <div className="flex items-start gap-2 text-sky-200/90">
                     <Radio className="mt-0.5 h-3.5 w-3.5 shrink-0 text-sky-400" />
                     <span>
-                      <strong className="text-sky-300">美日／東海：</strong>
+                      <strong className="text-sky-300">美日韓／東海：</strong>
                       {currentRound.japanNotice}
                     </span>
                   </div>
                 </div>
 
-                {/* Rival Threads / PTT Attack Post */}
-                <div className="mt-4 border border-[#2C3A52] bg-[#090D16] p-4">
-                  <div className="flex items-start gap-3">
-                    <PortraitAvatar
-                      portraitKey={currentRound.rivalPost.portraitKey}
-                      sizeClass="w-12 h-12"
-                    />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2 text-xs">
-                        <span className="font-bold text-white">
-                          {currentRound.rivalPost.authorName}
-                        </span>
-                        <span className="text-slate-500">·</span>
-                        <span className="text-emerald-400 font-medium">
-                          {currentRound.rivalPost.authorRole}
-                        </span>
-                        <span className="text-slate-500">·</span>
-                        <span className="font-mono-bbs text-slate-400">
-                          {currentRound.rivalPost.platform}
+                {/* Authentic Threads (脆) / PTT Dual-Style Attack Post */}
+                <div className="mt-4 rounded-xl border border-[#282A2E] bg-[#101010] p-4 font-sans">
+                  <div className="flex items-center justify-between border-b border-[#222428] pb-2 text-[11px] text-[#777777]">
+                    <span className="font-semibold text-[#F3F5F7]">
+                      {currentRound.rivalPost.platform}
+                    </span>
+                    <span className="font-mono-bbs">{currentRound.dateLabel} · 即時發文</span>
+                  </div>
+
+                  <div className="mt-3 flex gap-3">
+                    {/* Avatar + Vertical Thread Spine */}
+                    <div className="flex flex-col items-center">
+                      <div className="relative">
+                        <PortraitAvatar
+                          key={currentRound.rivalPost.portraitKey}
+                          portraitKey={currentRound.rivalPost.portraitKey}
+                          sizeClass="w-10 h-10 rounded-full"
+                        />
+                        <span className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full border-2 border-[#101010] bg-white text-black">
+                          <Plus className="h-2.5 w-2.5 stroke-[3]" />
                         </span>
                       </div>
-                      <p className="mt-1.5 text-sm font-bold text-white">
+                      <div className="mt-2 w-0.5 flex-1 bg-[#2F3135]" />
+                    </div>
+
+                    {/* Thread Content */}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex flex-wrap items-center gap-1.5 text-xs">
+                          <span className="font-bold text-[#F3F5F7]">
+                            {currentRound.rivalPost.authorName}
+                          </span>
+                          <BadgeCheck className="h-3.5 w-3.5 text-[#0095F6]" />
+                          <span className="text-[#777777]">
+                            {currentRound.rivalPost.authorHandle}
+                          </span>
+                          <span className="text-[#555555]">·</span>
+                          <span className="text-emerald-400 font-medium">
+                            {currentRound.rivalPost.authorRole}
+                          </span>
+                        </div>
+                        <MoreHorizontal className="h-4 w-4 shrink-0 text-[#777777]" />
+                      </div>
+
+                      <p className="mt-1.5 text-sm font-bold text-white leading-snug">
                         {currentRound.rivalPost.headline}
                       </p>
-                      <p className="mt-1 text-xs leading-relaxed text-slate-300">
+                      <p className="mt-1 text-[13px] leading-relaxed text-[#D4D6D9]">
                         {currentRound.rivalPost.body}
                       </p>
-                      <div className="mt-2 font-mono-bbs text-[11px] text-slate-400">
-                        {currentRound.rivalPost.likesLabel}
+
+                      {/* Threads Action Bar */}
+                      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-[#8E9297]">
+                        <div className="flex items-center gap-4 text-xs">
+                          <span className="inline-flex items-center gap-1.5">
+                            <Heart className="h-4 w-4 text-rose-500" />
+                            <span className="tabular-nums">推爆</span>
+                          </span>
+                          <span className="inline-flex items-center gap-1.5">
+                            <MessageCircle className="h-4 w-4" />
+                            <span>筆戰</span>
+                          </span>
+                          <span className="inline-flex items-center gap-1.5">
+                            <Repeat2 className="h-4 w-4" />
+                            <span>轉發</span>
+                          </span>
+                          <Send className="h-4 w-4" />
+                        </div>
+                        <span className="font-mono-bbs text-[11px] text-[#777777]">
+                          {currentRound.rivalPost.likesLabel}
+                        </span>
                       </div>
                     </div>
+                  </div>
+
+                  {/* Your Candidate Waiting on Thread Spine */}
+                  <div className="mt-2.5 flex items-center gap-3 pl-1">
+                    <PortraitAvatar
+                      key={activeFaction.portraitKey}
+                      portraitKey={activeFaction.portraitKey}
+                      sizeClass="w-7 h-7 rounded-full"
+                    />
+                    <span className="text-xs text-[#8E9297]">
+                      輪到 <strong className="text-blue-400">{activeFaction.name}</strong> 回串戰到底（從下方擇一送出）…
+                    </span>
                   </div>
                 </div>
 
@@ -572,38 +704,132 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Live PTT Push/Boo Feed Log */}
+              {/* Dual Threads (脆) / PTT Live Feed Log */}
               <div className="border border-[#243044] bg-[#080B10] p-4">
-                <div className="flex items-center justify-between border-b border-[#1E293B] pb-2 font-mono-bbs text-xs text-slate-400">
-                  <span>PTT / Threads 即時推噓戰況紀錄</span>
-                  <span>即時更新</span>
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#1E293B] pb-2 text-xs">
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setFeedTab('THREADS')}
+                      className={`px-2.5 py-1 text-xs font-bold cursor-pointer ${
+                        feedTab === 'THREADS'
+                          ? 'bg-[#262626] text-white'
+                          : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      @ Threads 脆即時串流
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFeedTab('PTT')}
+                      className={`px-2.5 py-1 font-mono-bbs text-xs font-bold cursor-pointer ${
+                        feedTab === 'PTT'
+                          ? 'bg-blue-700 text-white'
+                          : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      PTT 八卦／政黑推噓
+                    </button>
+                  </div>
+                  <span className="font-mono-bbs text-slate-500">即時輿論演算法</span>
                 </div>
-                <div className="bbs-scroll mt-2.5 max-h-48 overflow-y-auto space-y-1.5 font-mono-bbs text-xs">
-                  {bbsLog.map((entry) => (
-                    <div key={entry.id} className="flex items-start gap-2 leading-relaxed">
-                      <span className="shrink-0 text-slate-500">[{entry.dateLabel}]</span>
-                      <span
-                        className={`shrink-0 font-bold ${
-                          entry.type === '推'
-                            ? 'text-amber-300'
-                            : entry.type === '噓'
-                              ? 'text-rose-400'
-                              : entry.type === '系統'
-                                ? 'text-blue-400'
-                                : 'text-slate-400'
-                        }`}
-                      >
-                        {entry.type}
-                      </span>
-                      <span className="shrink-0 text-cyan-300">{entry.author}:</span>
-                      <span className="text-slate-200">{entry.text}</span>
+
+                {feedTab === 'THREADS' ? (
+                  <div className="bbs-scroll mt-2.5 min-h-[340px] max-h-[500px] overflow-y-auto divide-y divide-[#1E1F23]">
+                    {bbsLog.map((entry) => (
+                      <div key={entry.id} className="py-2.5 flex items-start gap-2.5 text-xs">
+                        <div
+                          className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full font-bold text-[11px] ${
+                            entry.type === '系統'
+                              ? 'bg-blue-700 text-white'
+                              : entry.type === '噓'
+                                ? 'bg-rose-900/80 text-rose-200'
+                                : 'bg-[#242529] text-slate-200'
+                          }`}
+                        >
+                          {entry.author.slice(0, 1).toUpperCase()}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-bold text-white">@{entry.author}</span>
+                            {entry.type === '系統' && (
+                              <BadgeCheck className="h-3.5 w-3.5 text-[#0095F6]" />
+                            )}
+                            <span className="text-[#777777] text-[11px]">{entry.dateLabel}</span>
+                          </div>
+                          <p className="mt-0.5 text-[#D4D6D9] leading-relaxed">{entry.text}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="mt-2.5 font-mono-bbs text-xs">
+                    {/* Classic PTT BBS Article Header */}
+                    <div className="border border-[#1E293B] bg-[#0B1220] px-3 py-2 text-[11px] space-y-0.5">
+                      <div className="flex flex-wrap justify-between gap-2">
+                        <span>
+                          <span className="bg-blue-800 px-1 text-white">作者</span>{' '}
+                          <span className="text-cyan-300">{activeFaction.id}_2028</span>
+                        </span>
+                        <span>
+                          <span className="bg-blue-800 px-1 text-white">看板</span>{' '}
+                          <span className="text-amber-300">Gossiping / HatePolitics</span>
+                        </span>
+                      </div>
+                      <div>
+                        <span className="bg-blue-800 px-1 text-white">標題</span>{' '}
+                        <span className="text-white font-bold">
+                          [爆卦] {currentRound.title}
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap justify-between text-slate-400">
+                        <span>時間 {currentRound.dateLabel}（第 {currentRound.round}/24 回合）</span>
+                        <span>
+                          累計推文：
+                          <strong className="text-amber-300">
+                            {bbsLog.filter((b) => b.type === '推').length} 推
+                          </strong>{' '}
+                          /{' '}
+                          <strong className="text-rose-400">
+                            {bbsLog.filter((b) => b.type === '噓').length} 噓
+                          </strong>
+                        </span>
+                      </div>
                     </div>
-                  ))}
-                </div>
+
+                    <div className="bbs-scroll mt-2 min-h-[300px] max-h-[440px] overflow-y-auto space-y-1.5 px-1">
+                      <div className="border-b border-dashed border-[#243044] pb-2 text-slate-300 leading-relaxed">
+                        ※ 發信站: 批踢踢實業坊(ptt.cc), 來自: 台北重慶南路戰情室
+                        <br />
+                        ※ 主旨熱議：{currentRound.situationBrief}
+                      </div>
+                      {bbsLog.map((entry) => (
+                        <div key={entry.id} className="flex items-start gap-2 leading-relaxed">
+                          <span className="shrink-0 text-slate-500">[{entry.dateLabel}]</span>
+                          <span
+                            className={`shrink-0 font-bold ${
+                              entry.type === '推'
+                                ? 'text-amber-300'
+                                : entry.type === '噓'
+                                  ? 'text-rose-400'
+                                  : entry.type === '系統'
+                                    ? 'text-blue-400'
+                                    : 'text-slate-400'
+                            }`}
+                          >
+                            {entry.type}
+                          </span>
+                          <span className="shrink-0 text-cyan-300">{entry.author}:</span>
+                          <span className="text-slate-200">{entry.text}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </section>
 
-            {/* Right 5 Cols: Real-Time 22-County Map + County Quick Selector */}
+            {/* Right 5 Cols: Real-Time Map + Dynamic Electoral Districts Grid */}
             <aside className="flex flex-col gap-4 lg:col-span-5">
               <TaiwanGeopoliticalMap
                 counties={counties}
@@ -621,10 +847,13 @@ export default function App() {
                 }}
               />
 
-              {/* Compact 22-County Quick Grid for Instant Scanning */}
+              {/* Compact Quick Grid for 22 Counties + Temporary Constitutional Districts */}
               <div className="border border-[#243044] bg-[#0D131F] p-3.5">
                 <div className="flex items-center justify-between border-b border-[#1E293B] pb-2 text-xs">
-                  <span className="font-bold text-slate-200">22 縣市即時戰況速覽</span>
+                  <span className="font-bold text-slate-200">
+                    {counties.length} 選區即時戰況速覽
+                    {counties.length > 22 ? '（含行憲臨時選區）' : ''}
+                  </span>
                   <span className="font-mono-bbs text-slate-400">點擊切換地圖檢視</span>
                 </div>
                 <div className="mt-2.5 grid grid-cols-2 gap-1.5 sm:grid-cols-3">
@@ -680,14 +909,86 @@ export default function App() {
           counties={counties}
           stats={stats}
           flags={flags}
-          onResolveWar={(endingId, finalOccupied) => {
-            setWarOccupiedCounties(finalOccupied);
-            if (endingId === 15) {
-              setFlags((prev) => Array.from(new Set([...prev, 'guoguang_victory'])));
-            } else if (endingId === 16) {
-              setFlags((prev) => Array.from(new Set([...prev, 'hk_restoration'])));
+          allowContinueCampaign={!warLaunchedFromTitle && roundIndex < CAMPAIGN_ROUNDS.length - 1}
+          onResolveWar={(
+            endingId,
+            finalOccupied,
+            postWarAction,
+            capturedProvinces,
+            capturedHk
+          ) => {
+            setWarOccupiedCounties(endingId === 17 ? finalOccupied : undefined);
+            const updatedCounties = applyWarVictoryOutcomeToCounties(
+              counties,
+              endingId,
+              capturedProvinces,
+              capturedHk
+            );
+            setCounties(updatedCounties);
+
+            const addedFlags: string[] = [];
+            if (endingId === 15) addedFlags.push('guoguang_victory', 'hk_restoration');
+            else if (endingId === 16) addedFlags.push('hk_restoration', 'war_hk_victory');
+            else if (endingId === 18) addedFlags.push('war_defense_victory');
+
+            if (endingId !== 17) {
+              if (capturedHk) addedFlags.push('hk_restoration');
+              for (const p of capturedProvinces) {
+                addedFlags.push(`captured_prov_${p}`);
+              }
             }
+
+            const nextFlags = Array.from(new Set([...flags, ...addedFlags]));
+            setFlags(nextFlags);
+
+            const nextStats: CampaignStats =
+              endingId === 17
+                ? { ...stats, ccpTension: 100 }
+                : {
+                    ...stats,
+                    unity: clampStat(stats.unity + 14),
+                    momentum: clampStat(stats.momentum + 16),
+                    ccpTension: 0,
+                  };
+            setStats(nextStats);
+
             const warEnding = ENDINGS.find((e) => e.id === endingId) ?? ENDINGS[14];
+            const updatedUnlocked = saveUnlockedEnding(warEnding.id);
+            setUnlockedMap(updatedUnlocked);
+
+            if (
+              postWarAction === 'CONTINUE_CAMPAIGN' &&
+              endingId !== 17 &&
+              roundIndex < CAMPAIGN_ROUNDS.length - 1
+            ) {
+              const tempCount = updatedCounties.filter((c) => c.isTemporary).length;
+              const districtLabel =
+                endingId === 15
+                  ? '香港＋五大中國大陸行憲臨時選區已全面納入開票，三民主義統一中國！'
+                  : tempCount > 0
+                    ? `已成功增設 ${tempCount} 個行憲臨時選區納入 2028 開票！`
+                    : '台灣全境愛國選票暴衝，共軍主力已徹底潰敗！';
+
+              bbsAudio.playElectionFanfare(true);
+              setLastOutcomeBanner(
+                `★ 【台海勝利戰報】${warEnding.title}！台灣各縣市藍營選票大暴增，且${districtLabel}`
+              );
+              setBbsLog((prev) => [
+                {
+                  id: `war-win-${Date.now()}`,
+                  round: currentRound.round,
+                  dateLabel: currentRound.dateLabel,
+                  type: '系統',
+                  author: '國防部戰報',
+                  text: `擊敗共軍勝利結算：全台選票狂飆，${districtLabel}`,
+                },
+                ...prev,
+              ]);
+              setRoundIndex((prev) => prev + 1);
+              setPhase('PLAYING');
+              return;
+            }
+
             finishWithEnding(warEnding, false);
           }}
         />
