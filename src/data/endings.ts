@@ -29,6 +29,26 @@ export function saveUnlockedEnding(endingId: number): Record<number, string> {
   return current;
 }
 
+export function saveUnlockedEndings(endingIds: number[]): Record<number, string> {
+  const current = loadUnlockedEndings();
+  let changed = false;
+  const now = new Date().toISOString();
+  for (const id of endingIds) {
+    if (!current[id]) {
+      current[id] = now;
+      changed = true;
+    }
+  }
+  if (changed) {
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(current));
+    } catch {
+      // ignore quota errors
+    }
+  }
+  return current;
+}
+
 export function shouldTriggerStraitWar(ctx: {
   round: number;
   ccpTension: number;
@@ -36,9 +56,9 @@ export function shouldTriggerStraitWar(ctx: {
   warAlreadyFought: boolean;
 }): boolean {
   if (ctx.warAlreadyFought) return false;
-  // CCP invades Taiwan if tension crosses 82+, OR if Project Guoguang was loudly restarted and tension crosses 68+
-  if (ctx.ccpTension >= 82 && ctx.round >= 6) return true;
-  if (ctx.flags.includes('guoguang_restarted') && ctx.round >= 14 && ctx.ccpTension >= 68) {
+  // Keep primary focus on the 2028 Taiwan Presidential Election unless tension is pushed very high
+  if (ctx.ccpTension >= 88 && ctx.round >= 8) return true;
+  if (ctx.flags.includes('guoguang_restarted') && ctx.round >= 14 && ctx.ccpTension >= 74) {
     return true;
   }
   return false;
@@ -56,15 +76,16 @@ export function checkMidGameEnding(ctx: GameEvaluationContext): EndingDefinition
   if (round >= 12 && stats.unity <= 18) {
     return find(29);
   }
-  // Extreme Japan/US Trust Collapse
-  if (round >= 16 && stats.japanPosture <= 12) {
-    return find(20);
-  }
   return null;
 }
 
+/**
+ * Evaluate the primary 2028 Election MAJOR Ending (1 of 15 MAJOR endings).
+ * Election Simulator First: Mainland/HK/NEA territorial outcomes are resolved as SUB endings,
+ * while their vote boosts and temporary districts enrich the 2028 Presidential Election tally!
+ */
 export function evaluateFinalEnding(ctx: GameEvaluationContext): EndingDefinition {
-  const { factionId, stats, nationalShares, counties, flags } = ctx;
+  const { factionId, stats, nationalShares, flags } = ctx;
   const find = (id: number) => ENDINGS.find((e) => e.id === id)!;
 
   const kmtWon =
@@ -72,87 +93,12 @@ export function evaluateFinalEnding(ctx: GameEvaluationContext): EndingDefinitio
   const tppWon =
     nationalShares.tpp > nationalShares.kmt && nationalShares.tpp > nationalShares.dpp;
 
-  const getCounty = (name: string) => counties.find((c) => c.id === name);
-  const hualienKmt = getCounty('花蓮縣')?.current.kmt ?? 50;
-  const miaoliKmt = getCounty('苗栗縣')?.current.kmt ?? 41;
-
-  // Project Guoguang Full Victory cannot be overridden once achieved
-  if (flags.includes('guoguang_victory')) {
-    return find(15);
-  }
-
-  // Hong Kong Restoration via war victory
-  if (flags.includes('war_hk_victory')) {
-    return find(16);
-  }
-
-  // 1. Extreme Chaos / Secret Meme Endings
-  const chaosCount = [
-    flags.includes('love_power_meme'),
-    flags.includes('final_chaos_meme'),
-    flags.includes('midnight_livestream_crash'),
-    flags.includes('chongqing_1949_meme'),
-    flags.includes('boba_diplomacy'),
-    flags.includes('venice_dome_meme'),
-    flags.includes('diaoyu_transferred'),
-  ].filter(Boolean).length;
-
-  if (chaosCount >= 3 && !kmtWon) {
-    return find(30);
-  }
-
-  // PTT-Threads Rule Ending
-  if (stats.momentum >= 90 && (stats.unity <= 40 || stats.funds <= 32)) {
-    return find(21);
-  }
-
-  // Hong Kong Restoration via high international posture + HK flag
-  if (flags.includes('hk_restoration') && stats.japanPosture >= 72 && (kmtWon || stats.momentum >= 88)) {
-    return find(16);
-  }
-
-  // 1949 Chongqing Airport Mix-up
-  if (flags.includes('chongqing_1949_meme') && !kmtWon) {
-    return find(27);
-  }
-
-  // TPP Roar Miracle
+  // 1. Third-Party TPP Upset Election Major Ending (END-25)
   if (tppWon) {
     return find(25);
   }
 
-  // Taipei Dome Venice
-  if (flags.includes('venice_dome_meme') && (flags.includes('love_power_meme') || flags.includes('squirrel_meme_master')) && !kmtWon) {
-    return find(24);
-  }
-
-  // Ma Ying-jeou Death Grip
-  if (flags.includes('death_grip_activated') && factionId === 'ma' && kmtWon) {
-    return find(22);
-  }
-
-  // Hou Yu-ih 8-Words Loop
-  if (flags.includes('hou_eight_words') && factionId === 'hou' && kmtWon && stats.unity >= 70) {
-    return find(23);
-  }
-
-  // Miaoli Kingdom Independence (Miaoli + Hualien local faction runaway when losing national)
-  if (!kmtWon && ((flags.includes('hualien_kingdom') && miaoliKmt >= 46) || (hualienKmt >= 58 && miaoliKmt >= 45))) {
-    return find(28);
-  }
-
-  // 2. Geopolitical Non-War / War-Defense Endings
-  if (stats.ccpTension <= 18 && stats.japanPosture <= 25) {
-    return find(19);
-  }
-  if (stats.japanPosture <= 16) {
-    return find(20);
-  }
-  if (kmtWon && (flags.includes('war_defense_victory') || (stats.japanPosture >= 78 && (stats.ccpTension >= 68 || flags.includes('diaoyu_transferred'))))) {
-    return find(18);
-  }
-
-  // 3. Victory Endings
+  // 2. KMT Election Victory Major Endings (END-01..08)
   if (kmtWon) {
     if (nationalShares.kmt >= 47) return find(2);
     if (nationalShares.kmt - nationalShares.dpp < 1.5) return find(8);
@@ -164,11 +110,122 @@ export function evaluateFinalEnding(ctx: GameEvaluationContext): EndingDefinitio
     return find(4);
   }
 
-  // 4. Defeat Endings
+  // 3. KMT Election Defeat Major Endings (END-09..14)
   if (stats.unity < 35) return find(11);
   if (stats.funds < 25) return find(13);
   if (stats.momentum < 35) return find(12);
   if (flags.includes('junyue_walkout_2')) return find(10);
   if (nationalShares.dpp - nationalShares.kmt <= 3.0) return find(14);
   return find(9);
+}
+
+/**
+ * Collect all earned SUB endings (territorial achievements, geopolitical side-fates, & election memes)
+ * unlocked alongside the 2028 Election MAJOR Ending.
+ */
+export function evaluateEarnedSubEndings(ctx: GameEvaluationContext): EndingDefinition[] {
+  const { factionId, stats, nationalShares, counties, flags } = ctx;
+  const find = (id: number) => ENDINGS.find((e) => e.id === id)!;
+  const subs: EndingDefinition[] = [];
+  const pushUnique = (id: number) => {
+    const found = find(id);
+    if (found && !subs.some((s) => s.id === found.id)) {
+      subs.push(found);
+    }
+  };
+
+  const kmtWon =
+    nationalShares.kmt >= nationalShares.dpp && nationalShares.kmt >= nationalShares.tpp;
+  const getCounty = (name: string) => counties.find((c) => c.id === name);
+  const hualienKmt = getCounty('花蓮縣')?.current.kmt ?? 50;
+  const miaoliKmt = getCounty('苗栗縣')?.current.kmt ?? 41;
+
+  const warCcpCrushed =
+    flags.includes('war_defense_victory') ||
+    flags.includes('war_hk_victory') ||
+    flags.includes('guoguang_victory');
+
+  // Mainland / HK / Northern / NEA Territorial Sub-Endings
+  if (flags.includes('nea_ending_33') || flags.includes('waidongbei_recovered')) {
+    pushUnique(33);
+  }
+  if (flags.includes('nea_ending_32') || flags.includes('saibei_recovered')) {
+    pushUnique(32);
+    pushUnique(34); // Tuva Republic (圖瓦共和國) joyful participation in Saibei constituency!
+  }
+  if (flags.includes('nea_ending_31')) {
+    pushUnique(31);
+  }
+  if (flags.includes('guoguang_victory')) {
+    pushUnique(15);
+  }
+  if (
+    flags.includes('war_hk_victory') ||
+    (flags.includes('hk_restoration') && stats.japanPosture >= 72 && (kmtWon || stats.momentum >= 86))
+  ) {
+    pushUnique(16);
+  }
+  if (
+    flags.includes('war_defense_victory') ||
+    (kmtWon && stats.japanPosture >= 78 && (stats.ccpTension >= 68 || flags.includes('diaoyu_transferred')))
+  ) {
+    pushUnique(18);
+  }
+
+  // Non-war Geopolitical Sub-Endings
+  if (!warCcpCrushed && stats.ccpTension <= 18 && stats.japanPosture <= 25) {
+    pushUnique(19);
+  }
+  if (!warCcpCrushed && stats.japanPosture <= 16) {
+    pushUnique(20);
+  }
+
+  // Meme & Local Faction Sub-Endings
+  const chaosCount = [
+    flags.includes('love_power_meme'),
+    flags.includes('final_chaos_meme'),
+    flags.includes('midnight_livestream_crash'),
+    flags.includes('chongqing_1949_meme'),
+    flags.includes('boba_diplomacy'),
+    flags.includes('venice_dome_meme'),
+    flags.includes('diaoyu_transferred'),
+  ].filter(Boolean).length;
+
+  if (chaosCount >= 3) pushUnique(30);
+  if (stats.momentum >= 90 && (stats.unity <= 42 || stats.funds <= 34)) pushUnique(21);
+  if (flags.includes('death_grip_activated') && factionId === 'ma' && kmtWon) pushUnique(22);
+  if (flags.includes('hou_eight_words') && factionId === 'hou' && kmtWon && stats.unity >= 68) pushUnique(23);
+  if (
+    flags.includes('venice_dome_meme') &&
+    (flags.includes('love_power_meme') || flags.includes('squirrel_meme_master'))
+  ) {
+    pushUnique(24);
+  }
+  if (flags.includes('chongqing_1949_meme') && !kmtWon) pushUnique(27);
+  if (
+    !kmtWon &&
+    ((flags.includes('hualien_kingdom') && miaoliKmt >= 46) || (hualienKmt >= 58 && miaoliKmt >= 45))
+  ) {
+    pushUnique(28);
+  }
+  if (factionId === 'fu' || flags.includes('hualien_kingdom') || hualienKmt >= 62) {
+    pushUnique(35);
+  }
+  if (stats.funds >= 74) {
+    pushUnique(36);
+  }
+  if (flags.includes('squirrel_meme_master') || flags.includes('love_power_meme')) {
+    pushUnique(37);
+  }
+  if (stats.momentum >= 82 && !subs.some((s) => s.id === 21)) {
+    pushUnique(38);
+  }
+  if (Math.abs(nationalShares.kmt - nationalShares.dpp) <= 4.5) {
+    pushUnique(39);
+  }
+  if (flags.includes('boba_diplomacy') || stats.japanPosture >= 72) {
+    pushUnique(40);
+  }
+
+  return subs.slice(0, 4);
 }

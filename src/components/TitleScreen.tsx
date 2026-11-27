@@ -9,6 +9,7 @@ interface TitleScreenProps {
   onSelectFaction: (id: FactionId) => void;
   onStartGame: () => void;
   onStartWarMode: () => void;
+  onStartNeaWarMode: () => void;
   onOpenGallery: () => void;
   unlockedCount: number;
   muted: boolean;
@@ -20,6 +21,7 @@ export function TitleScreen({
   onSelectFaction,
   onStartGame,
   onStartWarMode,
+  onStartNeaWarMode,
   onOpenGallery,
   unlockedCount,
   muted,
@@ -63,7 +65,7 @@ export function TitleScreen({
             className="flex items-center gap-2 border border-[#2C3A52] bg-[#111827] px-3.5 py-2 text-xs font-medium text-slate-200 hover:border-blue-500 hover:text-white transition-colors whitespace-nowrap shrink-0 cursor-pointer"
           >
             <BookOpen className="h-3.5 w-3.5 text-amber-400" />
-            <span>結局圖鑑 ({unlockedCount}/30)</span>
+            <span>結局圖鑑 ({unlockedCount}/40)</span>
           </button>
 
           <button
@@ -97,7 +99,7 @@ export function TitleScreen({
               </p>
 
               <p className="mt-3 text-xs leading-relaxed text-slate-300">
-                從 9 位真實國民黨派系強權中擇一披掛上陣，每位候選人都擁有專屬「個人風味事件」！經歷二十四回合最狠、最三小的脆文與 PTT 攻防：從「釣魚島主權與美日態度角力」、「大巨蛋室內威尼斯」、「重啟國光反攻大陸」到「香港再光」，即時牽動台灣 22 縣市＋閩粵港＋菲韓越日周邊地圖，解鎖 30 種史詩級惡搞結局。
+                本作為「2028 台灣總統大選模擬器」！從 9 位真實國民黨派系強權中擇一披掛上陣，經歷二十四回合脆與 PTT 選戰攻防。主線決定 <strong>15 個大結局</strong>，沿途觸發釣魚島、國光反攻、香港再光、圖瓦共和國／漠北與清代外東北戰線或政治迷因則額外解鎖 <strong>25 個子結局</strong>，共計 40 種歷史結局！
               </p>
 
               <div className="mt-4 border-t border-[#243044] pt-3 text-xs text-slate-400 space-y-1.5">
@@ -150,9 +152,17 @@ export function TitleScreen({
               <button
                 type="button"
                 onClick={onStartWarMode}
-                className="mt-2.5 flex w-full items-center justify-center gap-2 border border-red-700/80 bg-[#1B1016] px-4 py-2.5 text-xs font-bold text-red-300 hover:border-red-500 hover:text-white transition-colors cursor-pointer"
+                className="mt-2.5 flex w-full items-center justify-center gap-2 border border-red-700/80 bg-[#1B1016] px-4 py-2 text-xs font-bold text-red-300 hover:border-red-500 hover:text-white transition-colors cursor-pointer"
               >
-                <span>⚡ 緊急戰況：直接體驗中共攻台＆國光反攻拖曳戰</span>
+                <span>⚡ 特別戰役 1：台海防衛＆國光反攻大陸（還都南京）</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={onStartNeaWarMode}
+                className="mt-2 flex w-full items-center justify-center gap-2 border border-cyan-700/80 bg-[#0D1A2B] px-4 py-2 text-xs font-bold text-cyan-300 hover:border-cyan-400 hover:text-white transition-colors cursor-pointer"
+              >
+                <span>🧭 特別戰役 2：蒙古＆清代外東北決戰（引爆第二次韓戰）</span>
               </button>
             </div>
           </div>

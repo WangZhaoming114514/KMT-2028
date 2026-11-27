@@ -22,6 +22,7 @@ import { TaiwanGeopoliticalMap } from './TaiwanGeopoliticalMap';
 
 interface GameOverScreenProps {
   ending: EndingDefinition;
+  earnedSubEndings?: EndingDefinition[];
   faction: FactionLeader;
   counties: CountyState[];
   flags: string[];
@@ -36,6 +37,7 @@ interface GameOverScreenProps {
 
 export function GameOverScreen({
   ending,
+  earnedSubEndings = [],
   faction,
   counties,
   flags,
@@ -51,8 +53,24 @@ export function GameOverScreen({
   const [mapMode, setMapMode] = useState<MapMode>('REGIONAL');
 
   const isVictory =
-    ending.category === 'VICTORY' || ending.id === 15 || ending.id === 16 || ending.id === 18;
+    ending.category === 'VICTORY' ||
+    ending.id === 15 ||
+    ending.id === 16 ||
+    ending.id === 18 ||
+    ending.id === 31 ||
+    ending.id === 32 ||
+    ending.id === 33;
+  const mainlandUnified =
+    ending.id === 15 ||
+    ending.id === 31 ||
+    ending.id === 32 ||
+    ending.id === 33 ||
+    flags.includes('guoguang_victory');
   const tempDistricts = counties.filter((c) => c.isTemporary);
+  const mingeShare = nationalShares.minge ?? 0;
+  const safeSelectedCountyId = counties.some((c) => c.id === selectedCountyId)
+    ? selectedCountyId
+    : faction.homeCounty;
 
   return (
     <div className="bbs-scanlines min-h-screen w-full bg-[#090C12] text-slate-100 flex items-center justify-center p-4 sm:p-6">
@@ -63,13 +81,22 @@ export function GameOverScreen({
             isVictory ? 'bg-[#102347]' : 'bg-[#1C1219]'
           }`}
         >
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <span
+              className={`font-mono-bbs text-[11px] font-bold px-2 py-0.5 ${
+                ending.tier === 'MAJOR'
+                  ? 'bg-amber-950/90 text-amber-300 border border-amber-500/70'
+                  : 'bg-purple-950/90 text-purple-300 border border-purple-500/70'
+              }`}
+            >
+              {ending.tier === 'MAJOR' ? '大結局 · 2028總統大選' : '子結局 · 領土／支線'}
+            </span>
             <span className="font-mono-bbs text-xs font-bold text-amber-300">
               {ending.code} · {ending.rarity}
             </span>
             <span className="text-slate-600">/</span>
             <span className="text-xs text-slate-300 tabular-nums">
-              結局圖鑑已收集 {unlockedCount} / 30
+              結局圖鑑已收集 {unlockedCount} / 40
             </span>
           </div>
 
@@ -79,7 +106,7 @@ export function GameOverScreen({
             className="flex items-center gap-1.5 border border-[#334155] bg-[#0D131F] px-3 py-1.5 text-xs font-medium text-slate-200 hover:border-blue-400 hover:text-white cursor-pointer"
           >
             <BookOpen className="h-3.5 w-3.5 text-amber-400" />
-            <span>查看 30 結局圖鑑</span>
+            <span>查看 40 結局圖鑑</span>
           </button>
         </div>
 
@@ -125,8 +152,11 @@ export function GameOverScreen({
                     <div className="bg-blue-600" style={{ width: `${nationalShares.kmt}%` }} />
                     <div className="bg-emerald-600" style={{ width: `${nationalShares.dpp}%` }} />
                     <div className="bg-cyan-500" style={{ width: `${nationalShares.tpp}%` }} />
+                    {mingeShare > 0 && (
+                      <div className="bg-purple-600" style={{ width: `${mingeShare}%` }} />
+                    )}
                   </div>
-                  <div className="mt-3 flex items-center justify-between font-mono-bbs text-xs tabular-nums">
+                  <div className="mt-3 flex flex-wrap items-center justify-between gap-2 font-mono-bbs text-xs tabular-nums">
                     <span className="text-blue-400 font-bold">
                       國民黨 {nationalShares.kmt.toFixed(2)}%
                     </span>
@@ -136,6 +166,11 @@ export function GameOverScreen({
                     <span className="text-cyan-400 font-bold">
                       民眾黨 {nationalShares.tpp.toFixed(2)}%
                     </span>
+                    {mingeShare > 0 && (
+                      <span className="text-purple-400 font-bold">
+                        民革 {mingeShare.toFixed(2)}%
+                      </span>
+                    )}
                   </div>
                 </div>
 
@@ -160,7 +195,7 @@ export function GameOverScreen({
                     </div>
                     <div>
                       <div className="text-slate-500">
-                        {ending.id === 15 || flags.includes('guoguang_victory')
+                        {mainlandUnified
                           ? '大陸政局'
                           : ending.id === 16 || ending.id === 18
                             ? '台海戰況'
@@ -168,22 +203,22 @@ export function GameOverScreen({
                       </div>
                       <div
                         className={`mt-0.5 text-sm font-bold ${
-                          ending.id === 15 || flags.includes('guoguang_victory')
+                          mainlandUnified
                             ? 'text-blue-400'
                             : ending.id === 16 || ending.id === 18
                               ? 'text-cyan-300'
                               : 'text-rose-400'
                         }`}
                       >
-                        {ending.id === 15 || flags.includes('guoguang_victory')
-                          ? '已統一(0%)'
+                        {mainlandUnified
+                          ? '還都南京(0%)'
                           : ending.id === 16 || ending.id === 18
-                            ? '0% 共軍全滅'
+                            ? '0% 敵軍潰敗'
                             : `${stats.ccpTension}%`}
                       </div>
                     </div>
                     <div>
-                      <div className="text-slate-500">美日態度</div>
+                      <div className="text-slate-500">美日韓態度</div>
                       <div className="mt-0.5 text-sm font-bold text-cyan-300">
                         {stats.japanPosture}%
                       </div>
@@ -195,9 +230,12 @@ export function GameOverScreen({
               {/* Temporary Constitutional Electoral Districts Breakdown */}
               {tempDistricts.length > 0 && (
                 <div className="mt-4 border border-blue-700/70 bg-[#0D1A33] p-4">
-                  <div className="flex items-center justify-between text-xs font-bold text-blue-300">
-                    <span>★ 增設「行憲臨時選區」開票戰報（點擊切換右側地圖檢視）</span>
-                    <span className="font-mono-bbs text-amber-300">{tempDistricts.length} 區翻藍</span>
+                  <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-bold text-blue-300">
+                    <span>
+                      ★ 增設「行憲臨時選區／特別市」開票戰報
+                      {mainlandUnified ? '（還都南京 · 金馬併入福建 · 四黨競逐）' : ''}
+                    </span>
+                    <span className="font-mono-bbs text-amber-300">{tempDistricts.length} 區開票</span>
                   </div>
                   <div className="mt-2.5 grid grid-cols-2 gap-2 sm:grid-cols-3">
                     {tempDistricts.map((td) => (
@@ -206,7 +244,7 @@ export function GameOverScreen({
                         type="button"
                         onClick={() => setSelectedCountyId(td.id)}
                         className={`flex items-center justify-between border px-2.5 py-1.5 text-left font-mono-bbs text-xs cursor-pointer ${
-                          selectedCountyId === td.id
+                          safeSelectedCountyId === td.id
                             ? 'border-amber-400 bg-[#172C54]'
                             : 'border-blue-800/80 bg-[#0A1326] hover:border-blue-400'
                         }`}
@@ -216,6 +254,35 @@ export function GameOverScreen({
                           {td.current.kmt.toFixed(1)}%
                         </span>
                       </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Earned SUB Endings Showcase (Territorial + Political Meme Achievements) */}
+              {earnedSubEndings.length > 0 && (
+                <div className="mt-4 border border-purple-700/70 bg-[#150E26] p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-bold text-purple-300">
+                    <span>★ 同步解鎖之子結局（大陸／北疆領土 ＆ 支線成就）</span>
+                    <span className="font-mono-bbs text-amber-300">
+                      +{earnedSubEndings.length} 個子結局已收入圖鑑
+                    </span>
+                  </div>
+                  <div className="mt-2.5 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    {earnedSubEndings.map((sub) => (
+                      <div
+                        key={sub.id}
+                        className="border border-purple-800/80 bg-[#0D0A18] p-2.5 text-xs"
+                      >
+                        <div className="flex items-center justify-between font-mono-bbs text-[10px] text-purple-300">
+                          <span>{sub.code} · 子結局</span>
+                          <span className="text-amber-300">{sub.rarity}</span>
+                        </div>
+                        <div className="mt-1 font-bold text-white leading-snug">{sub.title}</div>
+                        <p className="mt-1 text-[11px] text-slate-300 leading-snug">
+                          {sub.subtitle}
+                        </p>
+                      </div>
                     ))}
                   </div>
                 </div>
@@ -329,7 +396,7 @@ export function GameOverScreen({
           <div className="lg:col-span-5">
             <TaiwanGeopoliticalMap
               counties={counties}
-              selectedCountyId={selectedCountyId}
+              selectedCountyId={safeSelectedCountyId}
               onSelectCounty={setSelectedCountyId}
               stats={stats}
               flags={flags}

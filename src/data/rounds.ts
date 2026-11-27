@@ -1358,9 +1358,9 @@ export const CAMPAIGN_ROUNDS: RoundEvent[] = [
       {
         id: 'r19_1949_nanjing',
         toneLabel: '時空穿越線',
-        label: '狂熱大喊：「重慶南路不只是總統府，我們還要奪回大陸重慶市跟南京！」',
+        label: '狂熱大喊：「重慶南路不只是總統府，我們還要還都南京、奪回重慶！」',
         speechText:
-          '「我們不只是要奪回台北重慶南路一段122號，我們還要讓青天白日照耀秋海棠，回到 1949 年的重慶！」',
+          '「我們不只是要奪回台北重慶南路一段122號，我們還要讓青天白日照耀秋海棠，正式還都南京、重返1949的陪都重慶！」',
         hint: '全場媒體當機！觸發極端時空錯亂級政治迷因（小心飛錯機場結局）！',
         statDelta: { unity: -10, momentum: 18, funds: -6, ccpTension: 20, japanPosture: -10 },
         swing: { north: -1.8, central: -1.5, south: -2.2, islands: 1.8 },
@@ -1369,6 +1369,22 @@ export const CAMPAIGN_ROUNDS: RoundEvent[] = [
           { type: '推', author: 'history_meme', text: '笑到翻過去，現在是2027還是1950年？' },
         ],
         mediaReaction: '微博與 Threads 同時瘋傳這段發言，被封為年度最荒謬歷史穿越時刻。',
+      },
+      {
+        id: 'r19_saibei_negotiation',
+        toneLabel: '塞北憲政談判',
+        label: '與外蒙古及烏梁海方面召開秘密憲政談判：「高度自治換取納入塞北行憲選區！」',
+        speechText:
+          '「依據中華民國憲法疆域精神與現代聯邦共榮條款，一旦光復大陸還都南京，我們誠邀外蒙古與唐努烏梁海納入『塞北行憲臨時選區』共同制憲！」',
+        hint: '解鎖塞北（外蒙古＆唐努烏梁海）外交收復旗標！若國光勝出將直接納入塞北行憲選區！',
+        statDelta: { unity: 4, momentum: 9, funds: -5, ccpTension: 6, japanPosture: 4 },
+        swing: { north: 0.6, central: 0.5, east: 1.0, islands: 1.4 },
+        setFlags: ['saibei_recovered'],
+        pushReactions: [
+          { type: '推', author: 'geopolitics_bro', text: '狂！連外蒙古跟唐努烏梁海都先談好塞北選區了' },
+          { type: '推', author: 'nanjing_roc', text: '萬一真的還都南京，這張秋海棠拼圖直接補齊' },
+        ],
+        mediaReaction: '日韓與中亞觀察家驚呼國民黨竟端出完整的「塞北自治暨行憲草案」。',
       },
       {
         id: 'r19_economy_flag',

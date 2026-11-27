@@ -54,6 +54,54 @@
   background: #3B4E6B;
 }
 
+@keyframes nanjingMapFocusPan {
+  0% {
+    transform: translate(0%, 0%) scale(1);
+  }
+  25% {
+    transform: translate(-1%, 10%) scale(1.75);
+  }
+  72% {
+    transform: translate(-1%, 11%) scale(1.88);
+  }
+  100% {
+    transform: translate(0%, 0%) scale(1);
+  }
+}
+
+@keyframes nanjingCalligraphyFade {
+  0% {
+    opacity: 0;
+    transform: scale(1.12) translateY(8px);
+    letter-spacing: 0.35em;
+  }
+  22% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    letter-spacing: 0.22em;
+  }
+  78% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    letter-spacing: 0.22em;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.98) translateY(-4px);
+    letter-spacing: 0.2em;
+  }
+}
+
+.animate-nanjing-pan {
+  transform-origin: 49% 8%;
+  animation: nanjingMapFocusPan 5.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.animate-nanjing-calligraphy {
+  font-family: 'BiauKai', 'DFKai-SB', 'KaiTi', 'Noto Serif TC', 'PMingLiU', serif;
+  animation: nanjingCalligraphyFade 5.6s ease-in-out forwards;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

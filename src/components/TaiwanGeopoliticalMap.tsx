@@ -5,9 +5,14 @@ import type { Topology, GeometryCollection } from 'topojson-specification';
 import type { Feature, FeatureCollection, Geometry } from 'geojson';
 import taiwanTopologyRaw from 'taiwan-atlas/counties-10t.json';
 import eastAsiaGeoRaw from '../data/eastAsiaGeo.json';
-import { ALL_CHINA_PROVINCES, CHINA_PROVINCE_THEATERS } from '../data/chinaProvinces';
+import saibeiGeoRaw from '../data/saibeiGeo.json';
+import {
+  ALL_CHINA_PROVINCES,
+  CHINA_PROVINCE_THEATERS,
+  MACRO_MAINLAND_REGIONS,
+} from '../data/chinaProvinces';
 import { CampaignStats, CountyState, MapMode } from '../types/game';
-import { ChinaTheaterFlag } from './ChinaTheaterFlags';
+import { FullContinentChinaFlag } from './ChinaTheaterFlags';
 
 interface TaiwanCountyProps {
   COUNTYID: string;
@@ -38,7 +43,11 @@ function getCountyFill(
   if (!clearOccupiedOnVictory && county && warOccupied?.has(county.id)) return '#DC2626';
   if (!county) return '#1E293B';
   const { kmt, dpp, tpp } = county.current;
+  const minge = county.current.minge ?? 0;
 
+  if (minge > kmt && minge > dpp && minge > tpp) {
+    return '#9333EA';
+  }
   if (kmt >= dpp && kmt >= tpp) {
     const lead = kmt - Math.max(dpp, tpp);
     if (lead >= 15) return '#1D4ED8';
@@ -66,9 +75,16 @@ export function TaiwanGeopoliticalMap({
   warOccupiedCounties,
 }: TaiwanGeopoliticalMapProps) {
   const [hoveredCountyId, setHoveredCountyId] = useState<string | null>(null);
+  const [nanjingReplayKey, setNanjingReplayKey] = useState<number>(0);
 
   const taiwanFallen = endingId === 17;
-  const guoguangVictory = !taiwanFallen && (flags.includes('guoguang_victory') || endingId === 15);
+  const guoguangVictory =
+    !taiwanFallen &&
+    (flags.includes('guoguang_victory') ||
+      endingId === 15 ||
+      endingId === 31 ||
+      endingId === 32 ||
+      endingId === 33);
   const warCcpDefeated =
     !taiwanFallen &&
     (guoguangVictory ||
@@ -78,9 +94,24 @@ export function TaiwanGeopoliticalMap({
       flags.includes('war_defense_victory'));
   const guoguangActive =
     !taiwanFallen && flags.includes('guoguang_restarted') && !guoguangVictory;
+  const countyLookup = useMemo(() => {
+    const map = new Map<string, CountyState>();
+    for (const c of counties) map.set(c.id, c);
+    return map;
+  }, [counties]);
+
   const hkActive =
     !taiwanFallen &&
-    (endingId === 16 || guoguangVictory || flags.includes('hk_restoration'));
+    (endingId === 15 ||
+      endingId === 16 ||
+      endingId === 31 ||
+      endingId === 32 ||
+      endingId === 33 ||
+      guoguangVictory ||
+      flags.includes('hk_restoration') ||
+      flags.includes('war_hk_victory') ||
+      Boolean(countyLookup.get('香港')) ||
+      Boolean(countyLookup.get('香港行憲特別選區')));
 
   const diaoyuTransferred = flags.includes('diaoyu_transferred');
   const diaoyuPatrol = flags.includes('diaoyu_patrol');
@@ -97,12 +128,6 @@ export function TaiwanGeopoliticalMap({
     () => (warOccupiedCounties ? new Set(warOccupiedCounties) : undefined),
     [warOccupiedCounties]
   );
-
-  const countyLookup = useMemo(() => {
-    const map = new Map<string, CountyState>();
-    for (const c of counties) map.set(c.id, c);
-    return map;
-  }, [counties]);
 
   const { taiwanFeatures, eastAsiaFeatures } = useMemo(() => {
     const topo = taiwanTopologyRaw as unknown as Topology<{
@@ -155,6 +180,35 @@ export function TaiwanGeopoliticalMap({
       paths: prov.features.map((f) => pathGen(f) ?? '').filter(Boolean),
     }));
 
+    const macroRegionPaths = MACRO_MAINLAND_REGIONS.map((mr) => ({
+      ...mr,
+      paths: mr.features.map((f) => pathGen(f) ?? '').filter(Boolean),
+    }));
+
+    const saibeiCollection = saibeiGeoRaw as unknown as FeatureCollection<
+      Geometry,
+      { name?: string; name_zh?: string }
+    >;
+    const saibeiPathGen = geoPath().projection(
+      geoMercator().fitExtent(
+        [
+          [504, 30],
+          [662, 112],
+        ],
+        saibeiCollection
+      )
+    );
+    const saibeiInsetPaths = saibeiCollection.features.map((f, idx) => {
+      const c = saibeiPathGen.centroid(f);
+      return {
+        id: `map-saibei-${f.properties?.name ?? idx}`,
+        name: f.properties?.name ?? '',
+        nameZh: f.properties?.name_zh ?? '',
+        d: saibeiPathGen(f) ?? '',
+        centroid: [Number.isFinite(c[0]) ? c[0] : 580, Number.isFinite(c[1]) ? c[1] : 70] as [number, number],
+      };
+    });
+
     const twPaths = taiwanFeatures.map((f) => ({
       id: f.properties.COUNTYNAME,
       eng: f.properties.COUNTYENG,
@@ -193,32 +247,37 @@ export function TaiwanGeopoliticalMap({
     const penghuInsetPath = penghuFeat
       ? geoPath().projection(
           geoMercator().fitExtent(
-            [
-              [16, 238],
-              [118, 326],
-            ],
+            guoguangVictory
+              ? [
+                  [16, 28],
+                  [118, 104],
+                ]
+              : [
+                  [16, 238],
+                  [118, 326],
+                ],
             penghuFeat as Feature
           )
         )(penghuFeat) ?? ''
       : '';
 
-    const hkInsetPath = hkFeat
+    const hkFocusCardPath = hkFeat
       ? geoPath().projection(
           geoMercator().fitExtent(
             [
-              [18, 468],
-              [118, 542],
+              [18, 146],
+              [116, 212],
             ],
             hkFeat as Feature
           )
         )(hkFeat) ?? ''
       : '';
 
-    // South China Sea Inset Projection (Bottom-left/center box: X=148..300, Y=444..550)
+    // South China Sea Inset Projection placed cleanly at Bottom-Left (X=10..176, Y=444..550)
     const scsProjection = geoMercator()
       .center([112.4, 12.6])
       .scale(500)
-      .translate([222, 502]);
+      .translate([92, 502]);
     const scsPathGen = geoPath().projection(scsProjection);
     const scsLandPaths = eastAsiaFeatures
       .filter((f) =>
@@ -242,14 +301,15 @@ export function TaiwanGeopoliticalMap({
       }));
 
     const scsInsetPts = {
-      yongxing: scsProjection([112.34, 16.83]) ?? [190, 466],
-      taiping: scsProjection([114.36, 10.37]) ?? [224, 524],
-      meiji: scsProjection([115.53, 9.9]) ?? [246, 530],
+      yongxing: scsProjection([112.34, 16.83]) ?? [60, 466],
+      taiping: scsProjection([114.36, 10.37]) ?? [94, 524],
+      meiji: scsProjection([115.53, 9.9]) ?? [116, 530],
     };
 
     const fujianPt = projection([119.3, 25.8]) ?? [280, 220];
     const xiamenPt = projection([118.1, 24.48]) ?? [225, 280];
-    const hkPt = projection([114.17, 22.32]) ?? [115, 340];
+    const hkPt = projection([114.17, 22.32]) ?? [216, 327];
+    const nanjingPt = projection([118.79, 32.06]) ?? [335, 44];
     const medianTop = projection([119.9, 25.8]) ?? [305, 220];
     const medianBot = projection([118.8, 22.4]) ?? [255, 370];
     const diaoyuPt = projection([123.475, 25.745]) ?? [440, 210];
@@ -262,23 +322,25 @@ export function TaiwanGeopoliticalMap({
     const taipeiPt = projection([121.56, 25.04]) ?? [378, 255];
     const kaohsiungPt = projection([120.3, 22.63]) ?? [325, 360];
     const dongshaPt = projection([116.73, 20.7]) ?? [260, 415];
-    const chinaFlagPt = projection([113.0, 30.3]) ?? [185, 96];
 
     return {
       eaPaths,
       chinaPaths,
       allChinaProvincePaths,
       provincePaths,
+      macroRegionPaths,
+      saibeiInsetPaths,
       twPaths,
       kinmenInsetPath,
       matsuInsetPath,
       penghuInsetPath,
-      hkInsetPath,
+      hkFocusCardPath,
       scsLandPaths,
       scsInsetPts,
       fujianPt,
       xiamenPt,
       hkPt,
+      nanjingPt,
       medianTop,
       medianBot,
       diaoyuPt,
@@ -291,9 +353,23 @@ export function TaiwanGeopoliticalMap({
       taipeiPt,
       kaohsiungPt,
       dongshaPt,
-      chinaFlagPt,
     };
-  }, [eastAsiaFeatures, taiwanFeatures, mapMode]);
+  }, [eastAsiaFeatures, taiwanFeatures, mapMode, guoguangVictory]);
+
+  const saibeiRecovered =
+    !taiwanFallen &&
+    (flags.includes('saibei_recovered') || Boolean(countyLookup.get('塞北行憲臨時選區')));
+  const waidongbeiRecovered =
+    !taiwanFallen &&
+    (flags.includes('waidongbei_recovered') || Boolean(countyLookup.get('外東北行憲臨時選區')));
+  const koreaUnified = !taiwanFallen && flags.includes('korea_unified');
+  const mingeActive = (countyLookup.get('台北市')?.current.minge ?? 0) > 0 || guoguangVictory;
+
+  const hkSelectableId = countyLookup.get('香港')
+    ? '香港'
+    : countyLookup.get('香港行憲特別選區')
+      ? '香港行憲特別選區'
+      : null;
 
   const activeCounty =
     countyLookup.get(hoveredCountyId ?? selectedCountyId) ?? countyLookup.get('台北市')!;
@@ -303,7 +379,7 @@ export function TaiwanGeopoliticalMap({
     : guoguangVictory
       ? '三民主義統一中國'
       : warCcpDefeated
-        ? '共軍攻勢潰敗'
+        ? '共軍徹底瓦解'
         : stats.ccpTension >= 75
           ? '紅色攻台臨界'
           : stats.ccpTension >= 50
@@ -336,6 +412,15 @@ export function TaiwanGeopoliticalMap({
           <span className="font-mono-bbs text-slate-400">
             {counties.length} 選區 · 南海諸島 · 釣魚島
           </span>
+          {guoguangVictory && mapMode === 'REGIONAL' && (
+            <button
+              type="button"
+              onClick={() => setNanjingReplayKey((k) => k + 1)}
+              className="border border-amber-400/70 bg-blue-950/80 px-2 py-0.5 font-mono-bbs text-[10px] font-bold text-amber-200 hover:bg-blue-900 cursor-pointer"
+            >
+              重播還都南京聚焦
+            </button>
+          )}
         </div>
 
         <div className="flex items-center gap-1 bg-[#090C12] p-0.5 border border-[#243044]">
@@ -359,7 +444,7 @@ export function TaiwanGeopoliticalMap({
                 : 'text-slate-400 hover:text-slate-100'
             }`}
           >
-            台灣22縣市特寫
+            {guoguangVictory ? '台澎＆港平寧選區' : '台灣22縣市特寫'}
           </button>
         </div>
       </div>
@@ -368,7 +453,11 @@ export function TaiwanGeopoliticalMap({
       <div className="grid grid-cols-2 border-b border-[#243044] bg-[#0A0F18] text-xs">
         <div className="flex items-center justify-between border-r border-[#243044] px-3 py-1.5">
           <span className="text-slate-400 whitespace-nowrap">
-            {guoguangVictory ? '大陸重光 · 台海南海' : '中共壓力 · 台海南海'}
+            {guoguangVictory
+              ? '還都南京 · 台海南海'
+              : warCcpDefeated
+                ? '台海戰局 · 南海諸島'
+                : '中共壓力 · 台海南海'}
           </span>
           <span
             className={`font-mono-bbs font-semibold whitespace-nowrap tabular-nums ${
@@ -420,17 +509,27 @@ export function TaiwanGeopoliticalMap({
           )}
           {guoguangVictory && (
             <span className="font-bold text-blue-300">
-              ★ 國光大捷：大陸五省與香港行憲臨時選區已納入開票，全境轉藍！
+              ★ 還都南京：金馬併入福建（華南），改設香港・北平・南京特別市＋六大地理區開票，民革新勢力參選！
+            </span>
+          )}
+          {waidongbeiRecovered && (
+            <span className="font-bold text-amber-300">
+              ★ 外東北收復：黑龍江北岸・海參崴・庫頁島重歸版圖！
+            </span>
+          )}
+          {koreaUnified && (
+            <span className="font-bold text-cyan-200">
+              ★ 美日韓台聯軍助大韓民國統一朝鮮半島！
             </span>
           )}
           {guoguangActive && (
             <span className="font-bold text-amber-300">
-              ★ 國光計畫兵推啟動：中共壓力 ≥ 68% 即觸發跨海反攻戰！
+              ★ 國光計畫兵推啟動：壓力 ≥ 68% 即觸發跨海反攻戰！
             </span>
           )}
           {hkActive && (
             <span className="font-bold text-cyan-300">
-              ★ 香港再光：香港地圖已轉為青天白日藍！
+              ★ 香港再光：香港已轉為青天白日藍！
             </span>
           )}
           {diaoyuTransferred && (
@@ -492,144 +591,188 @@ export function TaiwanGeopoliticalMap({
             ))}
           </defs>
 
-          <rect width={SVG_W} height={SVG_H} fill="url(#seaGrid)" />
+          <g
+            key={guoguangVictory ? `nanjing-cam-${nanjingReplayKey}` : 'cam-static'}
+            className={guoguangVictory && mapMode === 'REGIONAL' ? 'animate-nanjing-pan' : undefined}
+          >
+            <rect width={SVG_W} height={SVG_H} fill="url(#seaGrid)" />
 
-          {/* Seamless Base Countries (zero middle crack in China, complete SEA!) */}
-          {regionalGeometry.eaPaths.map((ea) => {
-            const isChina = ea.name === 'China';
-            const isHongKong = ea.name === 'Hong Kong';
-            const isMacao = ea.name === 'Macao';
-            const isJapan = ea.name === 'Japan';
-            const isSouthKorea = ea.name === 'South Korea';
-            const isSeaNeutral =
-              ea.name === 'Philippines' ||
-              ea.name === 'North Korea' ||
-              ea.name === 'Vietnam' ||
-              ea.name === 'Laos' ||
-              ea.name === 'Cambodia' ||
-              ea.name === 'Thailand' ||
-              ea.name === 'Myanmar' ||
-              ea.name === 'Malaysia' ||
-              ea.name === 'Indonesia' ||
-              ea.name === 'Brunei' ||
-              ea.name === 'Singapore';
+            {/* Full-Continent Glowing Flag across Entire Mainland China Landmass */}
+            <FullContinentChinaFlag
+              clipPathId="mapChinaMasterClip"
+              svgWidth={SVG_W}
+              svgHeight={SVG_H}
+              cantonRight={210}
+              cantonBottom={168}
+              liberated={guoguangVictory}
+              taiwanFallen={taiwanFallen}
+              opacity={mapMode === 'REGIONAL' ? 0.96 : 0.35}
+            />
 
-            let fill = '#1E293B';
-            let stroke = '#475569';
-            if (isChina) {
-              fill = guoguangVictory
-                ? '#1D4ED8'
-                : !warCcpDefeated && (stats.ccpTension >= 75 || taiwanFallen)
-                  ? '#3A151B'
-                  : taiwanFallen
-                    ? '#3A151B'
-                    : '#24181F';
-              stroke = guoguangVictory
-                ? '#FACC15'
-                : !warCcpDefeated && (stats.ccpTension >= 75 || taiwanFallen)
-                  ? '#EF4444'
-                  : taiwanFallen
-                    ? '#EF4444'
-                    : '#5E3841';
-            } else if (isHongKong) {
-              fill = hkActive ? '#2563EB' : '#9F1239';
-              stroke = hkActive ? '#FACC15' : '#FB7185';
-            } else if (isMacao) {
-              fill = guoguangVictory ? '#2563EB' : '#6B212E';
-              stroke = guoguangVictory ? '#FACC15' : '#FB7185';
-            } else if (isJapan) {
-              fill = hasUsJpKrPact || stats.japanPosture >= 72 ? '#132B3E' : '#182330';
-              stroke = hasUsJpKrPact || stats.japanPosture >= 72 ? '#38BDF8' : '#3E556B';
-            } else if (isSouthKorea) {
-              fill = hasUsJpKrPact ? '#132B3E' : '#1C262B';
-              stroke = hasUsJpKrPact ? '#38BDF8' : '#4B636E';
-            } else if (isSeaNeutral) {
-              fill = '#1C262B';
-              stroke = '#4B636E';
-            }
+            {/* Seamless Base Countries (Hong Kong & Macao rendered AFTER China clip so Guangdong never covers HK!) */}
+            {regionalGeometry.eaPaths
+              .filter((ea) => ea.name !== 'Hong Kong' && ea.name !== 'Macao')
+              .map((ea) => {
+                const isChina = ea.name === 'China';
+                const isJapan = ea.name === 'Japan';
+                const isSouthKorea = ea.name === 'South Korea';
+                const isNorthKorea = ea.name === 'North Korea';
+                const isSeaNeutral =
+                  ea.name === 'Philippines' ||
+                  ea.name === 'Vietnam' ||
+                  ea.name === 'Laos' ||
+                  ea.name === 'Cambodia' ||
+                  ea.name === 'Thailand' ||
+                  ea.name === 'Myanmar' ||
+                  ea.name === 'Malaysia' ||
+                  ea.name === 'Indonesia' ||
+                  ea.name === 'Brunei' ||
+                  ea.name === 'Singapore';
 
-            return (
-              <path
-                key={ea.id}
-                d={ea.d}
-                fill={fill}
-                stroke={stroke}
-                strokeWidth={isHongKong ? 1.4 : isChina && guoguangVictory ? 1.3 : 0.85}
-                opacity={mapMode === 'REGIONAL' ? 0.96 : 0.38}
-                className={
-                  isHongKong && countyLookup.get('香港行憲特別選區')
-                    ? 'cursor-pointer'
-                    : undefined
+                let fill = '#1E293B';
+                let stroke = '#475569';
+                if (isChina) {
+                  fill = 'none';
+                  stroke = guoguangVictory
+                    ? '#FACC15'
+                    : !warCcpDefeated && (stats.ccpTension >= 75 || taiwanFallen)
+                      ? '#EF4444'
+                      : taiwanFallen
+                        ? '#EF4444'
+                        : '#991B1B';
+                } else if (isJapan) {
+                  fill = hasUsJpKrPact || stats.japanPosture >= 72 ? '#132B3E' : '#182330';
+                  stroke = hasUsJpKrPact || stats.japanPosture >= 72 ? '#38BDF8' : '#3E556B';
+                } else if (isSouthKorea || (isNorthKorea && koreaUnified)) {
+                  fill = hasUsJpKrPact || koreaUnified ? '#132B3E' : '#1C262B';
+                  stroke = koreaUnified ? '#FACC15' : hasUsJpKrPact ? '#38BDF8' : '#4B636E';
+                } else if (isNorthKorea || isSeaNeutral) {
+                  fill = '#1C262B';
+                  stroke = '#4B636E';
                 }
-                onClick={() => {
-                  if (isHongKong && countyLookup.get('香港行憲特別選區')) {
-                    onSelectCounty('香港行憲特別選區');
-                  }
-                }}
-              >
-                {isHongKong && (
-                  <title>
-                    {hkActive
-                      ? '香港（青天白日藍 · 點擊檢視香港行憲特別選區）'
-                      : '香港（中共控制區）'}
-                  </title>
-                )}
-              </path>
-            );
-          })}
 
-          {/* Real Natural Earth 10m Provincial Borders + Liberated Province Overlays */}
-          <g clipPath="url(#mapChinaMasterClip)" opacity={mapMode === 'REGIONAL' ? 1 : 0.4}>
-            {regionalGeometry.allChinaProvincePaths.map((cp) => (
-              <path
-                key={cp.id}
-                d={cp.d}
-                fill="none"
-                stroke={guoguangVictory ? '#60A5FA' : '#5E2A34'}
-                strokeWidth="0.65"
-                strokeOpacity={guoguangVictory ? 0.45 : 0.75}
-                pointerEvents="none"
-              />
-            ))}
-
-            {regionalGeometry.provincePaths.map((prov) => {
-              const tempCounty = countyLookup.get(prov.tempCountyId);
-              const liberated = !taiwanFallen && (guoguangVictory || Boolean(tempCounty));
-              if (!liberated) return null;
-
-              return (
-                <g
-                  key={prov.id}
-                  clipPath={`url(#m-prov-clip-${prov.id})`}
-                  className={tempCounty ? 'cursor-pointer' : undefined}
-                  onClick={() => {
-                    if (tempCounty) onSelectCounty(tempCounty.id);
-                  }}
-                >
-                  {prov.paths.map((pd, i) => (
-                    <g key={`${prov.id}-fill-${i}`}>
-                      <path d={pd} fill="#1D4ED8" stroke="#60A5FA" strokeWidth="0.8" />
+                return (
+                  <g key={ea.id}>
+                    {isChina && guoguangVictory && (
                       <path
-                        d={pd}
+                        d={ea.d}
                         fill="none"
                         stroke="#60A5FA"
-                        strokeWidth="8"
-                        strokeOpacity="0.3"
+                        strokeWidth={5}
+                        strokeOpacity={0.28}
+                        opacity={mapMode === 'REGIONAL' ? 1 : 0.35}
+                        pointerEvents="none"
                       />
-                      <path
-                        d={pd}
-                        fill="none"
-                        stroke="#BAE6FD"
-                        strokeWidth="2"
-                        strokeOpacity="0.6"
-                      />
+                    )}
+                    <path
+                      d={ea.d}
+                      fill={fill}
+                      stroke={stroke}
+                      strokeWidth={isChina && guoguangVictory ? 1.5 : 0.9}
+                      opacity={mapMode === 'REGIONAL' ? 0.96 : 0.38}
+                    />
+                  </g>
+                );
+              })}
+
+            {/* Real Natural Earth 10m Provincial Borders + Macro Region Clickable Overlays */}
+            <g clipPath="url(#mapChinaMasterClip)" opacity={mapMode === 'REGIONAL' ? 1 : 0.4}>
+              {regionalGeometry.allChinaProvincePaths.map((cp) => (
+                <path
+                  key={cp.id}
+                  d={cp.d}
+                  fill="none"
+                  stroke={guoguangVictory ? '#93C5FD' : '#5E2A34'}
+                  strokeWidth="0.65"
+                  strokeOpacity={guoguangVictory ? 0.42 : 0.7}
+                  pointerEvents="none"
+                />
+              ))}
+
+              {regionalGeometry.macroRegionPaths.map((mr) => {
+                const tempCounty = countyLookup.get(mr.tempCountyId);
+                if (guoguangVictory) {
+                  return (
+                    <g
+                      key={`macro-hit-${mr.id}`}
+                      className={tempCounty ? 'cursor-pointer' : undefined}
+                      onClick={() => {
+                        if (tempCounty) onSelectCounty(tempCounty.id);
+                      }}
+                    >
+                      {mr.paths.map((pd, i) => (
+                        <path
+                          key={`${mr.id}-hit-${i}`}
+                          d={pd}
+                          fill="transparent"
+                          stroke={selectedCountyId === mr.tempCountyId ? '#FACC15' : 'none'}
+                          strokeWidth={selectedCountyId === mr.tempCountyId ? 1.2 : 0}
+                        />
+                      ))}
+                      <title>{`${mr.name}（點擊檢視${mr.tempCountyId}）`}</title>
                     </g>
-                  ))}
-                  <title>{`${prov.name}（點擊檢視${prov.tempCountyId}）`}</title>
-                </g>
-              );
-            })}
-          </g>
+                  );
+                }
+
+                if (!taiwanFallen && tempCounty) {
+                  return (
+                    <g
+                      key={`macro-partial-${mr.id}`}
+                      className="cursor-pointer"
+                      onClick={() => onSelectCounty(tempCounty.id)}
+                    >
+                      {mr.paths.map((pd, i) => (
+                        <g key={`${mr.id}-pfill-${i}`}>
+                          <path d={pd} fill="#1D4ED8" fillOpacity="0.88" stroke="#60A5FA" strokeWidth="0.85" />
+                          <path
+                            d={pd}
+                            fill="none"
+                            stroke="#BAE6FD"
+                            strokeWidth="2"
+                            strokeOpacity="0.55"
+                          />
+                        </g>
+                      ))}
+                      <title>{`${mr.name}（已納入${tempCounty.id} · 點擊檢視）`}</title>
+                    </g>
+                  );
+                }
+
+                return null;
+              })}
+            </g>
+
+            {/* Hong Kong & Macao Rendered ABOVE China clipPath so Guangdong NEVER hides HK! */}
+            {regionalGeometry.eaPaths
+              .filter((ea) => ea.name === 'Hong Kong' || ea.name === 'Macao')
+              .map((ea) => {
+                const isHongKong = ea.name === 'Hong Kong';
+                const controlledBlue = isHongKong ? hkActive : guoguangVictory;
+                return (
+                  <path
+                    key={`top-${ea.id}`}
+                    d={ea.d}
+                    fill={controlledBlue ? '#2563EB' : '#9F1239'}
+                    stroke={controlledBlue ? '#FACC15' : '#FB7185'}
+                    strokeWidth={isHongKong ? 1.6 : 1.1}
+                    opacity={mapMode === 'REGIONAL' ? 1 : 0.45}
+                    className={isHongKong && hkSelectableId ? 'cursor-pointer' : undefined}
+                    onClick={() => {
+                      if (isHongKong && hkSelectableId) {
+                        onSelectCounty(hkSelectableId);
+                      }
+                    }}
+                  >
+                    {isHongKong && (
+                      <title>
+                        {hkActive
+                          ? '香港特別市（青天白日藍 · 已光復控制）'
+                          : '香港（未收復）'}
+                      </title>
+                    )}
+                  </path>
+                );
+              })}
 
           {/* Regional Overlays */}
           {mapMode === 'REGIONAL' && (
@@ -689,46 +832,179 @@ export function TaiwanGeopoliticalMap({
 
               {/* China Label Box */}
               <g
-                transform={`translate(${Math.max(12, regionalGeometry.xiamenPt[0] - 152)}, ${Math.max(16, regionalGeometry.xiamenPt[1] - 104)})`}
+                transform={`translate(${Math.max(12, regionalGeometry.xiamenPt[0] - 156)}, ${Math.max(16, regionalGeometry.xiamenPt[1] - 104)})`}
               >
                 <rect
-                  width="180"
+                  width="206"
                   height="36"
-                  fill={guoguangVictory ? '#0F2557' : '#181218'}
+                  fill={guoguangVictory || warCcpDefeated ? '#0F2557' : '#181218'}
                   fillOpacity="0.92"
-                  stroke={guoguangVictory ? '#FACC15' : '#7F1D1D'}
+                  stroke={guoguangVictory || warCcpDefeated ? '#FACC15' : '#7F1D1D'}
                   strokeWidth="1"
                 />
                 <text
                   x="8"
                   y="15"
-                  fill={guoguangVictory ? '#93C5FD' : '#FCA5A5'}
+                  fill={guoguangVictory || warCcpDefeated ? '#93C5FD' : '#FCA5A5'}
                   fontSize="10.5"
                   fontWeight="700"
                 >
                   {guoguangVictory
-                    ? '中華民國 · 三民主義統一中國'
+                    ? '還都南京 · 三民主義統一中國'
                     : warCcpDefeated
-                      ? '中共戰區（主力已潰敗）'
+                      ? '台海大捷 · 敵軍主力已瓦解'
                       : '中共 · 東部/南部戰區'}
                 </text>
                 <text x="8" y="29" fill="#E2E8F0" fontSize="9.5" className="font-mono-bbs">
                   {guoguangVictory
-                    ? '中國大陸各省與香港行憲選區開票中'
+                    ? '六大地理區＋港平寧開票 · 民革參選'
                     : warCcpDefeated
-                      ? '我軍掌握海空權 · 敵無法再犯'
+                      ? '我軍掌握制海權 · 敵已無力再犯'
                       : `壓力 ${stats.ccpTension}% · ${ccpLevelLabel}`}
                 </text>
               </g>
 
-              <ChinaTheaterFlag
-                x={regionalGeometry.chinaFlagPt[0]}
-                y={regionalGeometry.chinaFlagPt[1]}
-                width={90}
-                height={60}
-                liberated={guoguangVictory}
-                taiwanFallen={taiwanFallen}
-              />
+              {/* Municipal Star Pin for Nanjing Capital when Return to Nanjing active */}
+              {guoguangVictory && (
+                <g
+                  transform={`translate(${regionalGeometry.nanjingPt[0]}, ${regionalGeometry.nanjingPt[1]})`}
+                  className="cursor-pointer"
+                  onClick={() =>
+                    onSelectCounty(countyLookup.get('南京') ? '南京' : '華中行憲臨時選區')
+                  }
+                >
+                  <circle r={12} fill="#1D4ED8" fillOpacity={0.38} stroke="#FACC15" strokeWidth={1.2} />
+                  <circle r={4.5} fill="#FACC15" stroke="#0B1220" strokeWidth={1} />
+                  <rect
+                    x={10}
+                    y={-10}
+                    width="92"
+                    height="20"
+                    fill="#0F2557"
+                    fillOpacity="0.95"
+                    stroke="#FACC15"
+                    strokeWidth={1}
+                  />
+                  <text x={56} y={3} textAnchor="middle" fill="#FEF08A" fontSize="9.5" fontWeight="800">
+                    ★ 還都南京首都
+                  </text>
+                </g>
+              )}
+
+              {/* Saibei & Waidongbei Frontier Inset Frame */}
+              <g
+                className={
+                  countyLookup.get('外東北行憲臨時選區') || countyLookup.get('塞北行憲臨時選區')
+                    ? 'cursor-pointer'
+                    : undefined
+                }
+                onClick={() => {
+                  if (countyLookup.get('外東北行憲臨時選區')) {
+                    onSelectCounty('外東北行憲臨時選區');
+                  } else if (countyLookup.get('塞北行憲臨時選區')) {
+                    onSelectCounty('塞北行憲臨時選區');
+                  }
+                }}
+              >
+                <rect
+                  x="496"
+                  y="12"
+                  width="174"
+                  height="112"
+                  fill="#09111E"
+                  fillOpacity="0.93"
+                  stroke={waidongbeiRecovered || saibeiRecovered ? '#FACC15' : '#334155'}
+                  strokeWidth={waidongbeiRecovered || saibeiRecovered ? 1.5 : 1}
+                />
+                <text
+                  x="503"
+                  y="25"
+                  fill={waidongbeiRecovered || saibeiRecovered ? '#93C5FD' : '#94A3B8'}
+                  fontSize="9.2"
+                  fontWeight="700"
+                >
+                  {waidongbeiRecovered
+                    ? '★ 塞北(蒙古＆圖瓦)＆外東北全收'
+                    : saibeiRecovered
+                      ? '★ 塞北光復 · 蒙古＆圖瓦共和國'
+                      : '北疆特寫 · 外蒙古＆圖瓦共和國'}
+                </text>
+                {regionalGeometry.saibeiInsetPaths.map((sp) => {
+                  const isTuva = sp.name === 'TannuUriankhai';
+                  return (
+                    <g key={sp.id}>
+                      {isTuva && (
+                        <path
+                          d={sp.d}
+                          fill="none"
+                          stroke={saibeiRecovered ? '#38BDF8' : '#C084FC'}
+                          strokeWidth={2.4}
+                          strokeOpacity={0.4}
+                          pointerEvents="none"
+                        />
+                      )}
+                      <path
+                        d={sp.d}
+                        fill={
+                          saibeiRecovered
+                            ? isTuva
+                              ? '#0284C7'
+                              : '#1D4ED8'
+                            : isTuva
+                              ? '#4C1D95'
+                              : '#1C262B'
+                        }
+                        stroke={
+                          saibeiRecovered
+                            ? '#FACC15'
+                            : isTuva
+                              ? '#E879F9'
+                              : '#4B636E'
+                        }
+                        strokeWidth={isTuva ? 1.2 : saibeiRecovered ? 1.1 : 0.85}
+                      >
+                        <title>
+                          {saibeiRecovered
+                            ? `${sp.nameZh}（已收復納入塞北行憲臨時選區 · 點擊檢視）`
+                            : `${sp.nameZh}（於〈東北亞暨漠北決戰〉中收復或談判）`}
+                        </title>
+                      </path>
+                    </g>
+                  );
+                })}
+                {/* Clear micro-labels for Tuva Republic and Outer Mongolia */}
+                {regionalGeometry.saibeiInsetPaths.map((sp) => {
+                  const isTuva = sp.name === 'TannuUriankhai';
+                  return (
+                    <text
+                      key={`${sp.id}-lbl`}
+                      x={isTuva ? Math.max(524, sp.centroid[0] + 6) : sp.centroid[0] + 4}
+                      y={isTuva ? Math.max(36, sp.centroid[1] - 4) : sp.centroid[1] + 5}
+                      textAnchor="middle"
+                      fill={isTuva ? (saibeiRecovered ? '#FEF08A' : '#E9D5FF') : '#CBD5E1'}
+                      fontSize={isTuva ? '7.8' : '8'}
+                      fontWeight="700"
+                      className="pointer-events-none"
+                    >
+                      {isTuva ? '圖瓦共和國' : '外蒙古'}
+                    </text>
+                  );
+                })}
+                <text
+                  x="583"
+                  y="118"
+                  textAnchor="middle"
+                  fill={waidongbeiRecovered || saibeiRecovered ? '#FDE68A' : '#64748B'}
+                  fontSize="7.8"
+                  className="font-mono-bbs"
+                >
+                  {waidongbeiRecovered
+                    ? '圖瓦/漠北/清代外東北全納入開票'
+                    : saibeiRecovered
+                      ? '蒙古＆圖瓦已納入塞北行憲選區'
+                      : '東北亞戰場可收復圖瓦與漠北'}
+                </text>
+              </g>
 
               {/* Dongsha Islands */}
               <g transform={`translate(${regionalGeometry.dongshaPt[0]}, ${regionalGeometry.dongshaPt[1]})`}>
@@ -809,7 +1085,7 @@ export function TaiwanGeopoliticalMap({
                 </g>
               )}
 
-              {/* Hong Kong Callout + Inset Zoom */}
+              {/* Hong Kong Direct Map Marker (HK Inset Removed as Requested) */}
               {hkActive && (
                 <line
                   x1={regionalGeometry.kaohsiungPt[0]}
@@ -821,63 +1097,57 @@ export function TaiwanGeopoliticalMap({
                   strokeDasharray="4 3"
                 />
               )}
-              <circle
-                cx={regionalGeometry.hkPt[0]}
-                cy={regionalGeometry.hkPt[1]}
-                r={hkActive ? 9 : 6}
-                fill="none"
-                stroke={hkActive ? '#FACC15' : '#FB7185'}
-                strokeWidth={1.3}
-              />
               <g
-                transform="translate(10, 444)"
-                className={countyLookup.get('香港行憲特別選區') ? 'cursor-pointer' : undefined}
+                className={hkSelectableId ? 'cursor-pointer' : undefined}
                 onClick={() => {
-                  if (countyLookup.get('香港行憲特別選區')) {
-                    onSelectCounty('香港行憲特別選區');
-                  }
+                  if (hkSelectableId) onSelectCounty(hkSelectableId);
                 }}
               >
+                <circle
+                  cx={regionalGeometry.hkPt[0]}
+                  cy={regionalGeometry.hkPt[1]}
+                  r={hkActive ? 9 : 6}
+                  fill="none"
+                  stroke={hkActive ? '#FACC15' : '#FB7185'}
+                  strokeWidth={1.4}
+                />
                 <rect
-                  width="132"
-                  height="106"
+                  x={regionalGeometry.hkPt[0] - 46}
+                  y={regionalGeometry.hkPt[1] + 10}
+                  width="92"
+                  height="16"
                   fill="#09111E"
-                  fillOpacity="0.93"
+                  fillOpacity="0.92"
                   stroke={hkActive ? '#3B82F6' : '#9F1239'}
-                  strokeWidth={1.2}
+                  strokeWidth="0.9"
                 />
                 <text
-                  x="8"
-                  y="16"
-                  fill={hkActive ? '#FACC15' : '#FDA4AF'}
-                  fontSize="10"
+                  x={regionalGeometry.hkPt[0]}
+                  y={regionalGeometry.hkPt[1] + 21}
+                  textAnchor="middle"
+                  fill={hkActive ? '#93C5FD' : '#FDA4AF'}
+                  fontSize="8.5"
                   fontWeight="700"
                 >
-                  {hkActive ? '香港特寫 · 再光藍天' : taiwanFallen ? '香港特寫 · 全境赤化' : '香港地圖特寫 (HK)'}
+                  {hkActive ? '★ 香港(再光藍天)' : taiwanFallen ? '香港(淪陷)' : '香港'}
                 </text>
-                <path
-                  d={regionalGeometry.hkInsetPath}
-                  fill={hkActive ? '#2563EB' : '#9F1239'}
-                  stroke={hkActive ? '#FACC15' : '#FDA4AF'}
-                  strokeWidth={1.1}
-                />
               </g>
 
-              {/* South China Sea Inset Frame */}
+              {/* South China Sea Inset Frame cleanly in bottom-left */}
               <g>
                 <defs>
                   <clipPath id="scsInsetClip">
-                    <rect x="148" y="444" width="152" height="106" />
+                    <rect x="10" y="444" width="166" height="106" />
                   </clipPath>
                 </defs>
                 <rect
-                  x="148"
+                  x="10"
                   y="444"
-                  width="152"
+                  width="166"
                   height="106"
                   fill="#071324"
                   fillOpacity="0.95"
-                  stroke={scsReinforced ? '#38BDF8' : '#334155'}
+                  stroke={scsReinforced || guoguangVictory ? '#38BDF8' : '#334155'}
                   strokeWidth="1.2"
                 />
                 <g clipPath="url(#scsInsetClip)">
@@ -904,18 +1174,18 @@ export function TaiwanGeopoliticalMap({
                   ))}
                   <polygon
                     points={`${regionalGeometry.scsInsetPts.yongxing[0]},${regionalGeometry.scsInsetPts.yongxing[1] - 4} ${regionalGeometry.scsInsetPts.yongxing[0] + 4},${regionalGeometry.scsInsetPts.yongxing[1]} ${regionalGeometry.scsInsetPts.yongxing[0]},${regionalGeometry.scsInsetPts.yongxing[1] + 4} ${regionalGeometry.scsInsetPts.yongxing[0] - 4},${regionalGeometry.scsInsetPts.yongxing[1]}`}
-                    fill={guoguangVictory ? '#2563EB' : '#DC2626'}
-                    stroke="#FCA5A5"
+                    fill={guoguangVictory || warCcpDefeated ? '#2563EB' : '#DC2626'}
+                    stroke={guoguangVictory || warCcpDefeated ? '#FACC15' : '#FCA5A5'}
                     strokeWidth="0.8"
                   />
                   <text
                     x={regionalGeometry.scsInsetPts.yongxing[0] + 6}
                     y={regionalGeometry.scsInsetPts.yongxing[1] + 3}
-                    fill={guoguangVictory ? '#93C5FD' : '#FCA5A5'}
+                    fill={guoguangVictory || warCcpDefeated ? '#93C5FD' : '#FCA5A5'}
                     fontSize="8.5"
                     fontWeight="700"
                   >
-                    {guoguangVictory ? '西沙永興(藍)' : '中共·永興島'}
+                    {guoguangVictory || warCcpDefeated ? '西沙永興(藍)' : '西沙永興島'}
                   </text>
 
                   <polygon
@@ -936,21 +1206,21 @@ export function TaiwanGeopoliticalMap({
 
                   <polygon
                     points={`${regionalGeometry.scsInsetPts.meiji[0]},${regionalGeometry.scsInsetPts.meiji[1] - 3.5} ${regionalGeometry.scsInsetPts.meiji[0] + 3.5},${regionalGeometry.scsInsetPts.meiji[1]} ${regionalGeometry.scsInsetPts.meiji[0]},${regionalGeometry.scsInsetPts.meiji[1] + 3.5} ${regionalGeometry.scsInsetPts.meiji[0] - 3.5},${regionalGeometry.scsInsetPts.meiji[1]}`}
-                    fill={guoguangVictory ? '#2563EB' : '#DC2626'}
-                    stroke="#FCA5A5"
+                    fill={guoguangVictory || warCcpDefeated ? '#2563EB' : '#DC2626'}
+                    stroke={guoguangVictory || warCcpDefeated ? '#FACC15' : '#FCA5A5'}
                     strokeWidth="0.8"
                   />
                   <text
                     x={regionalGeometry.scsInsetPts.meiji[0] + 5}
                     y={regionalGeometry.scsInsetPts.meiji[1] + 4}
-                    fill={guoguangVictory ? '#93C5FD' : '#FCA5A5'}
+                    fill={guoguangVictory || warCcpDefeated ? '#93C5FD' : '#FCA5A5'}
                     fontSize="8"
                     fontWeight="700"
                   >
                     美濟礁
                   </text>
                 </g>
-                <text x="155" y="458" fill="#7DD3FC" fontSize="9.5" fontWeight="700">
+                <text x="17" y="458" fill="#7DD3FC" fontSize="9.5" fontWeight="700">
                   南海諸島 · 太平＆西沙
                 </text>
               </g>
@@ -1006,9 +1276,12 @@ export function TaiwanGeopoliticalMap({
               ) {
                 return null;
               }
-              const cState = countyLookup.get(tp.id);
-              const isSelected = selectedCountyId === tp.id;
-              const isHovered = hoveredCountyId === tp.id;
+              const mergedIntoFujian =
+                guoguangVictory && (tp.id === '金門縣' || tp.id === '連江縣');
+              const lookupId = mergedIntoFujian ? '華南行憲臨時選區' : tp.id;
+              const cState = countyLookup.get(lookupId);
+              const isSelected = selectedCountyId === lookupId;
+              const isHovered = hoveredCountyId === lookupId;
               const fill = getCountyFill(cState, endingId, warOccupiedSet, warCcpDefeated);
 
               return (
@@ -1020,18 +1293,26 @@ export function TaiwanGeopoliticalMap({
                   stroke={isSelected ? '#FACC15' : isHovered ? '#FFFFFF' : '#0B1220'}
                   strokeWidth={isSelected ? 2.1 : isHovered ? 1.5 : 0.65}
                   className="cursor-pointer transition-opacity duration-150"
-                  onMouseEnter={() => setHoveredCountyId(tp.id)}
+                  onMouseEnter={() => setHoveredCountyId(lookupId)}
                   onMouseLeave={() => setHoveredCountyId(null)}
-                  onClick={() => onSelectCounty(tp.id)}
+                  onClick={() => onSelectCounty(lookupId)}
                 >
-                  <title>{`${tp.id}｜藍 ${cState?.current.kmt.toFixed(1)}% · 綠 ${cState?.current.dpp.toFixed(1)}% · 白 ${cState?.current.tpp.toFixed(1)}%`}</title>
+                  <title>
+                    {mergedIntoFujian
+                      ? `${tp.id}（已併入福建省 · 華南行憲臨時選區）`
+                      : `${tp.id}｜藍 ${cState?.current.kmt.toFixed(1)}% · 綠 ${cState?.current.dpp.toFixed(1)}% · 白 ${cState?.current.tpp.toFixed(1)}%${
+                          (cState?.current.minge ?? 0) > 0
+                            ? ` · 民革 ${(cState?.current.minge ?? 0).toFixed(1)}%`
+                            : ''
+                        }`}
+                  </title>
                 </path>
               );
             })}
           </g>
 
-          {/* Offshore Islands Inset Frames in TAIWAN_FOCUS mode */}
-          {mapMode === 'TAIWAN_FOCUS' && (
+          {/* Offshore Islands OR Replaced Municipal Insets (香港, 北平, 南京) in TAIWAN_FOCUS mode */}
+          {mapMode === 'TAIWAN_FOCUS' && !guoguangVictory && (
             <g>
               {[
                 { id: '金門縣', path: regionalGeometry.kinmenInsetPath, y: 12, labelY: 27 },
@@ -1085,6 +1366,117 @@ export function TaiwanGeopoliticalMap({
             </g>
           )}
 
+          {mapMode === 'TAIWAN_FOCUS' && guoguangVictory && (
+            <g>
+              {/* Penghu Remains */}
+              {(() => {
+                const cState = countyLookup.get('澎湖縣');
+                const isSelected = selectedCountyId === '澎湖縣';
+                return (
+                  <g
+                    className="cursor-pointer"
+                    onMouseEnter={() => setHoveredCountyId('澎湖縣')}
+                    onMouseLeave={() => setHoveredCountyId(null)}
+                    onClick={() => onSelectCounty('澎湖縣')}
+                  >
+                    <rect
+                      x={10}
+                      y={12}
+                      width={118}
+                      height={98}
+                      fill="#09111E"
+                      fillOpacity="0.92"
+                      stroke={isSelected ? '#FACC15' : '#2D3F59'}
+                      strokeWidth={isSelected ? 1.8 : 1}
+                    />
+                    <text x={16} y={27} fill="#CBD5E1" fontSize="10" fontWeight="700">
+                      澎湖縣
+                    </text>
+                    <path
+                      d={regionalGeometry.penghuInsetPath}
+                      fill={getCountyFill(cState, endingId, warOccupiedSet, warCcpDefeated)}
+                      stroke={isSelected ? '#FACC15' : '#0B1220'}
+                      strokeWidth={1}
+                    />
+                  </g>
+                );
+              })()}
+
+              {/* Replaced Kinmen/Matsu Slots: 香港, 北平, 南京 */}
+              {[
+                { id: '香港', tag: '替代金馬 · 特別市', y: 118, path: regionalGeometry.hkFocusCardPath },
+                { id: '北平', tag: '替代金馬 · 古都直轄', y: 204, path: null },
+                { id: '南京', tag: '替代金馬 · 還都首都', y: 290, path: null },
+              ].map((mun) => {
+                const cState = countyLookup.get(mun.id);
+                const isSelected = selectedCountyId === mun.id;
+                return (
+                  <g
+                    key={mun.id}
+                    className="cursor-pointer"
+                    onMouseEnter={() => setHoveredCountyId(mun.id)}
+                    onMouseLeave={() => setHoveredCountyId(null)}
+                    onClick={() => onSelectCounty(mun.id)}
+                  >
+                    <rect
+                      x={10}
+                      y={mun.y}
+                      width={132}
+                      height={78}
+                      fill="#0B1933"
+                      fillOpacity="0.95"
+                      stroke={isSelected ? '#FACC15' : '#3B82F6'}
+                      strokeWidth={isSelected ? 2 : 1.1}
+                    />
+                    <text x={16} y={mun.y + 15} fill="#FEF08A" fontSize="10" fontWeight="800">
+                      ★ {mun.id}特別市
+                    </text>
+                    <text x={16} y={mun.y + 28} fill="#93C5FD" fontSize="8" className="font-mono-bbs">
+                      {mun.tag}
+                    </text>
+                    {mun.path ? (
+                      <path
+                        d={mun.path}
+                        fill="#2563EB"
+                        stroke="#FACC15"
+                        strokeWidth={1}
+                      />
+                    ) : (
+                      <g transform={`translate(22, ${mun.y + 49})`}>
+                        <rect x="0" y="-12" width="16" height="12" fill="#1D4ED8" stroke="#FACC15" strokeWidth="0.9" />
+                        <circle cx="8" cy="-6" r="3" fill="#FFFFFF" />
+                        <text x="24" y="-3" fill="#E2E8F0" fontSize="9.5" fontWeight="700" className="font-mono-bbs">
+                          藍 {(cState?.current.kmt ?? 60).toFixed(1)}%
+                        </text>
+                      </g>
+                    )}
+                    <text x={16} y={mun.y + 70} fill="#CBD5E1" fontSize="8.5" className="font-mono-bbs">
+                      民革 {(cState?.current.minge ?? 12).toFixed(1)}% · 點擊檢視
+                    </text>
+                  </g>
+                );
+              })}
+
+              {/* Note: Kinmen/Matsu Merged into Fujian */}
+              <g
+                transform="translate(10, 378)"
+                className="cursor-pointer"
+                onClick={() => onSelectCounty('華南行憲臨時選區')}
+              >
+                <rect width="152" height="52" fill="#09111E" fillOpacity="0.94" stroke="#38BDF8" />
+                <text x="8" y="16" fill="#7DD3FC" fontSize="9.5" fontWeight="700">
+                  金門＆連江已併入福建
+                </text>
+                <text x="8" y="31" fill="#E2E8F0" fontSize="8.5" className="font-mono-bbs">
+                  歸屬華南行憲臨時選區
+                </text>
+                <text x="8" y="44" fill="#93C5FD" fontSize="8.5" className="font-mono-bbs">
+                  東沙＆太平島：藍旗固守
+                </text>
+              </g>
+            </g>
+          )}
+
           {/* Legend */}
           <g transform={`translate(${SVG_W - 222}, ${SVG_H - 64})`}>
             <rect width="210" height="54" fill="#090D16" fillOpacity="0.9" stroke="#243044" strokeWidth="1" />
@@ -1097,10 +1489,33 @@ export function TaiwanGeopoliticalMap({
             <text x="78" y="36" fill="#E2E8F0" fontSize="9.5">民進黨</text>
             <rect x="115" y="27" width="10" height="10" fill="#0891B2" />
             <text x="128" y="36" fill="#E2E8F0" fontSize="9.5">民眾黨</text>
-            <rect x="165" y="27" width="10" height="10" fill="#DC2626" />
-            <text x="178" y="36" fill="#FCA5A5" fontSize="9.5">淪陷/共</text>
+            <rect x="165" y="27" width="10" height="10" fill={guoguangVictory ? '#9333EA' : '#DC2626'} />
+            <text x="178" y="36" fill={guoguangVictory ? '#E9D5FF' : '#FCA5A5'} fontSize="9.5">
+              {guoguangVictory ? '民革' : '淪陷/紅'}
+            </text>
+          </g>
           </g>
         </svg>
+
+        {/* Return to Nanjing Calligraphic Overlay */}
+        {guoguangVictory && mapMode === 'REGIONAL' && (
+          <div
+            key={`callig-${nanjingReplayKey}`}
+            className="animate-nanjing-calligraphy pointer-events-none absolute inset-0 flex flex-col items-center justify-center"
+          >
+            <div className="border-2 border-amber-300/90 bg-[#0A1936]/85 px-7 py-4 shadow-[0_0_40px_rgba(37,99,235,0.65)] backdrop-blur-[2px] text-center">
+              <div className="font-mono-bbs text-[11px] tracking-[0.28em] text-amber-300">
+                中華民國國民政府
+              </div>
+              <div className="mt-1 text-4xl sm:text-5xl font-black text-white drop-shadow-[0_2px_12px_rgba(250,204,21,0.55)]">
+                還都南京
+              </div>
+              <div className="mt-1.5 font-mono-bbs text-xs tracking-[0.18em] text-blue-200">
+                青天白日滿地紅 · 金馬併福建 · 港平寧開票
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Selected County Live Dossier Inspector */}
@@ -1142,9 +1557,15 @@ export function TaiwanGeopoliticalMap({
             className="bg-cyan-500 transition-all duration-200"
             style={{ width: `${activeCounty.current.tpp}%` }}
           />
+          {(activeCounty.current.minge ?? 0) > 0 && (
+            <div
+              className="bg-purple-600 transition-all duration-200"
+              style={{ width: `${activeCounty.current.minge ?? 0}%` }}
+            />
+          )}
         </div>
 
-        <div className="mt-2 flex items-center justify-between font-mono-bbs text-xs tabular-nums">
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-2 font-mono-bbs text-xs tabular-nums">
           <span className="text-blue-400 font-semibold">
             國民黨 {activeCounty.current.kmt.toFixed(1)}%
           </span>
@@ -1154,6 +1575,14 @@ export function TaiwanGeopoliticalMap({
           <span className="text-cyan-400 font-semibold">
             民眾黨 {activeCounty.current.tpp.toFixed(1)}%
           </span>
+          {(activeCounty.current.minge ?? 0) > 0 && (
+            <span className="text-purple-400 font-semibold">
+              民革 {(activeCounty.current.minge ?? 0).toFixed(1)}%
+            </span>
+          )}
+          {!((activeCounty.current.minge ?? 0) > 0) && mingeActive && (
+            <span className="text-purple-400/70 font-semibold">民革 0.0%</span>
+          )}
         </div>
 
         <p className="mt-2 text-xs leading-relaxed text-slate-300">

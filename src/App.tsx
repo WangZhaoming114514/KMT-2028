@@ -19,9 +19,10 @@ import { CAMPAIGN_ROUNDS, getRoundEventForFaction } from './data/rounds';
 import {
   ENDINGS,
   checkMidGameEnding,
+  evaluateEarnedSubEndings,
   evaluateFinalEnding,
   loadUnlockedEndings,
-  saveUnlockedEnding,
+  saveUnlockedEndings,
   shouldTriggerStraitWar,
 } from './data/endings';
 import {
@@ -49,6 +50,7 @@ import { PortraitAvatar } from './components/PortraitAvatar';
 import { EndingsGalleryModal } from './components/EndingsGalleryModal';
 import { GameOverScreen } from './components/GameOverScreen';
 import { StraitWarMiniGame } from './components/StraitWarMiniGame';
+import { NortheastAsiaMiniGame } from './components/NortheastAsiaMiniGame';
 
 export default function App() {
   const [phase, setPhase] = useState<GamePhase>('TITLE_MENU');
@@ -64,6 +66,7 @@ export default function App() {
   const [selectedCountyId, setSelectedCountyId] = useState<string>('台北市');
   const [mapMode, setMapMode] = useState<MapMode>('REGIONAL');
   const [activeEnding, setActiveEnding] = useState<EndingDefinition | null>(null);
+  const [earnedSubEndings, setEarnedSubEndings] = useState<EndingDefinition[]>([]);
   const [unlockedMap, setUnlockedMap] = useState<Record<number, string>>(() =>
     loadUnlockedEndings()
   );
@@ -113,6 +116,7 @@ export default function App() {
       setSelectedCountyId(leader.homeCounty);
       setLastOutcomeBanner(null);
       setActiveEnding(null);
+      setEarnedSubEndings([]);
       setTallyRevealCount(0);
       setWarAlreadyFought(false);
       setWarLaunchedFromTitle(false);
@@ -144,18 +148,41 @@ export default function App() {
     setPhase('STRAIT_WAR');
   }, [activeFaction]);
 
-  const finishWithEnding = useCallback((ending: EndingDefinition, useElectionAnimation: boolean) => {
-    const updatedMap = saveUnlockedEnding(ending.id);
-    setUnlockedMap(updatedMap);
-    setActiveEnding(ending);
-    if (useElectionAnimation) {
-      setTallyRevealCount(0);
-      setPhase('ELECTION_NIGHT');
-    } else {
-      bbsAudio.playAlertSiren();
-      setPhase('GAME_OVER');
-    }
-  }, []);
+  const startInstantNeaWarMode = useCallback(() => {
+    const leader = activeFaction;
+    const baseFlags = ['guoguang_victory', 'hk_restoration', 'minge_party_entered', 'us_jp_kr_pact'];
+    bbsAudio.playAlertSiren();
+    setCounties(
+      applyWarVictoryOutcomeToCounties(initCountiesForFaction(leader), 15, [], true, false, false)
+    );
+    setStats({ ...leader.startingStats, ccpTension: 0, japanPosture: 82 });
+    setFlags(baseFlags);
+    setWarAlreadyFought(true);
+    setWarLaunchedFromTitle(true);
+    setWarOccupiedCounties(undefined);
+    setPhase('NORTHEAST_ASIA_WAR');
+  }, [activeFaction]);
+
+  const finishWithEnding = useCallback(
+    (
+      ending: EndingDefinition,
+      useElectionAnimation: boolean,
+      subEndings: EndingDefinition[] = []
+    ) => {
+      const updatedMap = saveUnlockedEndings([ending.id, ...subEndings.map((s) => s.id)]);
+      setUnlockedMap(updatedMap);
+      setActiveEnding(ending);
+      setEarnedSubEndings(subEndings);
+      if (useElectionAnimation) {
+        setTallyRevealCount(0);
+        setPhase('ELECTION_NIGHT');
+      } else {
+        bbsAudio.playAlertSiren();
+        setPhase('GAME_OVER');
+      }
+    },
+    []
+  );
 
   // Election night progressive tally animation
   useEffect(() => {
@@ -198,7 +225,10 @@ export default function App() {
         japanPosture: clampStat(stats.japanPosture + (choice.statDelta.japanPosture ?? 0)),
       };
 
-      const nextCounties = applyChoiceToCounties(counties, choice, activeFaction, nextStats);
+      let nextCounties = applyChoiceToCounties(counties, choice, activeFaction, nextStats);
+      if (nextFlags.includes('saibei_recovered') && warCcpCrushed) {
+        nextCounties = appendTemporaryDistrictsForFlags(nextCounties, nextFlags);
+      }
       const nextNational = computeNationalShares(nextCounties);
 
       const positiveNet =
@@ -236,6 +266,7 @@ export default function App() {
 
       // Check if CCP invades Taiwan -> Launch Strait Defense & Project Guoguang Mini-Game!
       if (
+        !warCcpCrushed &&
         shouldTriggerStraitWar({
           round: currentRound.round,
           ccpTension: nextStats.ccpTension,
@@ -246,6 +277,18 @@ export default function App() {
         bbsAudio.playAlertSiren();
         setWarAlreadyFought(true);
         setPhase('STRAIT_WAR');
+        return;
+      }
+
+      // After Guoguang Victory (還都南京), Second Korean War & Northern Frontier crisis erupts around Round 18+
+      if (
+        guoguangWon &&
+        !nextFlags.includes('nea_war_fought') &&
+        currentRound.round >= 18 &&
+        roundIndex < CAMPAIGN_ROUNDS.length - 1
+      ) {
+        bbsAudio.playAlertSiren();
+        setPhase('NORTHEAST_ASIA_WAR');
         return;
       }
 
@@ -267,9 +310,9 @@ export default function App() {
         return;
       }
 
-      // Check if Final Round 24 just finished
+      // Check if Final Round 24 just finished (Election Simulator First: resolves 15 MAJOR + unlocks earned SUB endings)
       if (roundIndex >= CAMPAIGN_ROUNDS.length - 1) {
-        const finalEnding = evaluateFinalEnding({
+        const evalCtx = {
           factionId: activeFaction.id,
           round: currentRound.round,
           stats: nextStats,
@@ -277,13 +320,13 @@ export default function App() {
           counties: nextCounties,
           flags: nextFlags,
           midGameTrigger: false,
-        });
-        if (finalEnding.id === 15 || finalEnding.id === 16) {
-          const tempFlags =
-            finalEnding.id === 15 ? ['guoguang_victory', 'hk_restoration'] : ['hk_restoration'];
-          setCounties((prev) => appendTemporaryDistrictsForFlags(prev, tempFlags));
+        };
+        const finalEnding = evaluateFinalEnding(evalCtx);
+        const subEndings = evaluateEarnedSubEndings(evalCtx);
+        if (nextFlags.includes('guoguang_victory') || nextFlags.includes('hk_restoration')) {
+          setCounties((prev) => appendTemporaryDistrictsForFlags(prev, nextFlags));
         }
-        finishWithEnding(finalEnding, true);
+        finishWithEnding(finalEnding, true, subEndings);
         return;
       }
 
@@ -329,6 +372,7 @@ export default function App() {
           }}
           onStartGame={() => startCampaign(selectedFactionId)}
           onStartWarMode={startInstantWarMode}
+          onStartNeaWarMode={startInstantNeaWarMode}
           onOpenGallery={() => setGalleryOpen(true)}
           unlockedCount={unlockedCount}
           muted={muted}
@@ -358,7 +402,7 @@ export default function App() {
 
               {/* Live National Projected Share Bar */}
               <div className="flex min-w-[260px] flex-1 max-w-md flex-col gap-1">
-                <div className="flex items-center justify-between font-mono-bbs text-[11px]">
+                <div className="flex items-center justify-between gap-2 font-mono-bbs text-[11px]">
                   <span className="text-blue-400 font-bold">
                     藍 {nationalShares.kmt.toFixed(1)}%
                   </span>
@@ -368,6 +412,11 @@ export default function App() {
                   <span className="text-cyan-400 font-bold">
                     白 {nationalShares.tpp.toFixed(1)}%
                   </span>
+                  {(nationalShares.minge ?? 0) > 0 && (
+                    <span className="text-purple-400 font-bold">
+                      民革 {(nationalShares.minge ?? 0).toFixed(1)}%
+                    </span>
+                  )}
                 </div>
                 <div className="flex h-2 w-full overflow-hidden bg-[#1E293B]">
                   <div
@@ -382,6 +431,12 @@ export default function App() {
                     className="bg-cyan-500 transition-all duration-200"
                     style={{ width: `${nationalShares.tpp}%` }}
                   />
+                  {(nationalShares.minge ?? 0) > 0 && (
+                    <div
+                      className="bg-purple-600 transition-all duration-200"
+                      style={{ width: `${nationalShares.minge ?? 0}%` }}
+                    />
+                  )}
                 </div>
               </div>
 
@@ -393,7 +448,7 @@ export default function App() {
                   className="flex items-center gap-1.5 border border-[#2C3A52] bg-[#111827] px-3 py-1.5 text-xs font-medium text-slate-200 hover:border-blue-500 whitespace-nowrap cursor-pointer"
                 >
                   <BookOpen className="h-3.5 w-3.5 text-amber-400" />
-                  <span>圖鑑 {unlockedCount}/30</span>
+                  <span>圖鑑 {unlockedCount}/40</span>
                 </button>
                 <button
                   type="button"
@@ -551,9 +606,9 @@ export default function App() {
                             : '北京／台海：'}
                       </strong>
                       {flags.includes('guoguang_victory')
-                        ? '中共政權已於國光大捷瓦解，中國大陸五省與香港行憲臨時選區全面籌備 2028 大選開票中。'
+                        ? '已正式還都南京（金門連江併入福建，改設香港・北平・南京特別市及六大地理區開票，民革參選）！'
                         : flags.includes('war_hk_victory') || flags.includes('war_defense_victory')
-                          ? '共軍渡海主力已被我軍殲滅潰敗，封鎖線全面解除，台海制海權穩固。'
+                          ? '敵軍渡海主力已被我軍殲滅潰敗，封鎖線全面解除，台海制海權穩固。'
                           : currentRound.ccpNotice}
                     </span>
                   </div>
@@ -565,6 +620,24 @@ export default function App() {
                     </span>
                   </div>
                 </div>
+
+                {flags.includes('guoguang_victory') && !flags.includes('nea_war_fought') && (
+                  <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border border-cyan-500/60 bg-[#0D1E38] px-3.5 py-2 text-xs">
+                    <span className="font-bold text-cyan-200">
+                      🧭 【東北亞緊急戰情】還都南京後北疆＆三十八度線緊張升高，可立即出兵漠北＆清代外東北！
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        bbsAudio.playAlertSiren();
+                        setPhase('NORTHEAST_ASIA_WAR');
+                      }}
+                      className="bg-blue-600 px-3 py-1 font-bold text-white hover:bg-blue-500 cursor-pointer"
+                    >
+                      啟動〈蒙古＆清代外東北決戰・韓戰〉→
+                    </button>
+                  </div>
+                )}
 
                 {/* Authentic Threads (脆) / PTT Dual-Style Attack Post */}
                 <div className="mt-4 rounded-xl border border-[#282A2E] bg-[#101010] p-4 font-sans">
@@ -858,12 +931,15 @@ export default function App() {
                 </div>
                 <div className="mt-2.5 grid grid-cols-2 gap-1.5 sm:grid-cols-3">
                   {counties.map((c) => {
+                    const minge = c.current.minge ?? 0;
                     const leader =
-                      c.current.kmt >= c.current.dpp && c.current.kmt >= c.current.tpp
-                        ? 'KMT'
-                        : c.current.dpp >= c.current.kmt && c.current.dpp >= c.current.tpp
-                          ? 'DPP'
-                          : 'TPP';
+                      minge > c.current.kmt && minge > c.current.dpp && minge > c.current.tpp
+                        ? 'MINGE'
+                        : c.current.kmt >= c.current.dpp && c.current.kmt >= c.current.tpp
+                          ? 'KMT'
+                          : c.current.dpp >= c.current.kmt && c.current.dpp >= c.current.tpp
+                            ? 'DPP'
+                            : 'TPP';
                     const isSel = c.id === selectedCountyId;
                     return (
                       <button
@@ -888,7 +964,9 @@ export default function App() {
                               ? 'text-blue-400'
                               : leader === 'DPP'
                                 ? 'text-emerald-400'
-                                : 'text-cyan-400'
+                                : leader === 'MINGE'
+                                  ? 'text-purple-400'
+                                  : 'text-cyan-400'
                           }`}
                         >
                           {c.current.kmt.toFixed(0)}%
@@ -922,14 +1000,20 @@ export default function App() {
               counties,
               endingId,
               capturedProvinces,
-              capturedHk
+              capturedHk,
+              flags.includes('saibei_recovered'),
+              flags.includes('waidongbei_recovered')
             );
             setCounties(updatedCounties);
 
             const addedFlags: string[] = [];
-            if (endingId === 15) addedFlags.push('guoguang_victory', 'hk_restoration');
-            else if (endingId === 16) addedFlags.push('hk_restoration', 'war_hk_victory');
-            else if (endingId === 18) addedFlags.push('war_defense_victory');
+            if (endingId === 15) {
+              addedFlags.push('guoguang_victory', 'hk_restoration', 'minge_party_entered');
+            } else if (endingId === 16) {
+              addedFlags.push('hk_restoration', 'war_hk_victory');
+            } else if (endingId === 18) {
+              addedFlags.push('war_defense_victory');
+            }
 
             if (endingId !== 17) {
               if (capturedHk) addedFlags.push('hk_restoration');
@@ -953,7 +1037,15 @@ export default function App() {
             setStats(nextStats);
 
             const warEnding = ENDINGS.find((e) => e.id === endingId) ?? ENDINGS[14];
-            const updatedUnlocked = saveUnlockedEnding(warEnding.id);
+            const bonusSubs: EndingDefinition[] = [];
+            if (endingId === 15 && capturedHk) {
+              const hkEnd = ENDINGS.find((e) => e.id === 16);
+              if (hkEnd) bonusSubs.push(hkEnd);
+            }
+            const updatedUnlocked = saveUnlockedEndings([
+              warEnding.id,
+              ...bonusSubs.map((s) => s.id),
+            ]);
             setUnlockedMap(updatedUnlocked);
 
             if (
@@ -964,14 +1056,14 @@ export default function App() {
               const tempCount = updatedCounties.filter((c) => c.isTemporary).length;
               const districtLabel =
                 endingId === 15
-                  ? '香港＋五大中國大陸行憲臨時選區已全面納入開票，三民主義統一中國！'
+                  ? '已正式還都南京！金門連江併入福建，改設香港・北平・南京特別市及六大地理區納入開票，並引入「民革」新勢力四黨競逐！'
                   : tempCount > 0
                     ? `已成功增設 ${tempCount} 個行憲臨時選區納入 2028 開票！`
-                    : '台灣全境愛國選票暴衝，共軍主力已徹底潰敗！';
+                    : '台灣全境愛國選票暴衝，敵軍主力已徹底瓦解！';
 
               bbsAudio.playElectionFanfare(true);
               setLastOutcomeBanner(
-                `★ 【台海勝利戰報】${warEnding.title}！台灣各縣市藍營選票大暴增，且${districtLabel}`
+                `★ 【台海勝利戰報】${warEnding.title}！台灣各縣市藍營選票大暴增，且${districtLabel}（此戰役領土子結局已收入圖鑑，繼續衝刺 2028 大選！）`
               );
               setBbsLog((prev) => [
                 {
@@ -980,7 +1072,7 @@ export default function App() {
                   dateLabel: currentRound.dateLabel,
                   type: '系統',
                   author: '國防部戰報',
-                  text: `擊敗共軍勝利結算：全台選票狂飆，${districtLabel}`,
+                  text: `擊敗敵軍勝利結算：${districtLabel}`,
                 },
                 ...prev,
               ]);
@@ -989,7 +1081,96 @@ export default function App() {
               return;
             }
 
-            finishWithEnding(warEnding, false);
+            finishWithEnding(warEnding, false, bonusSubs);
+          }}
+        />
+      )}
+
+      {phase === 'NORTHEAST_ASIA_WAR' && (
+        <NortheastAsiaMiniGame
+          faction={activeFaction}
+          stats={stats}
+          flags={flags}
+          allowContinueCampaign={!warLaunchedFromTitle && roundIndex < CAMPAIGN_ROUNDS.length - 1}
+          onResolveNeaWar={(endingId, postWarAction, meta) => {
+            const addedFlags = [
+              'nea_war_fought',
+              `nea_ending_${endingId}`,
+              'guoguang_victory',
+              'hk_restoration',
+              'minge_party_entered',
+            ];
+            if (meta.saibeiRecovered) addedFlags.push('saibei_recovered');
+            if (meta.waidongbeiRecovered) addedFlags.push('waidongbei_recovered');
+            if (meta.koreaUnified) addedFlags.push('korea_unified');
+
+            const nextFlags = Array.from(new Set([...flags, ...addedFlags]));
+            setFlags(nextFlags);
+
+            const updatedCounties = applyWarVictoryOutcomeToCounties(
+              counties,
+              15,
+              ['minnan', 'minbei', 'guangdong', 'shanghai_zhejiang', 'nanjing'],
+              true,
+              meta.saibeiRecovered,
+              meta.waidongbeiRecovered
+            );
+            setCounties(updatedCounties);
+
+            const nextStats: CampaignStats = {
+              ...stats,
+              unity: clampStat(stats.unity + 10),
+              momentum: clampStat(stats.momentum + 12),
+              japanPosture: meta.koreaUnified ? clampStat(stats.japanPosture + 14) : stats.japanPosture,
+              ccpTension: 0,
+            };
+            setStats(nextStats);
+
+            const neaEnding = ENDINGS.find((e) => e.id === endingId) ?? ENDINGS[30];
+            const bonusSubs: EndingDefinition[] = [];
+            if (meta.saibeiRecovered) {
+              const tuvaSub = ENDINGS.find((e) => e.id === 34);
+              const mobeiSub = ENDINGS.find((e) => e.id === 32);
+              if (mobeiSub && mobeiSub.id !== neaEnding.id) bonusSubs.push(mobeiSub);
+              if (tuvaSub) bonusSubs.push(tuvaSub);
+            }
+            const guoSub = ENDINGS.find((e) => e.id === 15);
+            if (guoSub) bonusSubs.push(guoSub);
+            const updatedUnlocked = saveUnlockedEndings([
+              neaEnding.id,
+              ...bonusSubs.map((s) => s.id),
+            ]);
+            setUnlockedMap(updatedUnlocked);
+
+            if (
+              postWarAction === 'CONTINUE_CAMPAIGN' &&
+              roundIndex < CAMPAIGN_ROUNDS.length - 1
+            ) {
+              bbsAudio.playElectionFanfare(true);
+              const summaryText =
+                endingId === 33
+                  ? '收回清代外東北（黑龍江北岸・海參崴・庫頁島）並助大韓民國統一朝鮮半島！新增外東北行憲選區！'
+                  : endingId === 32
+                    ? '奪回漠北外蒙古與圖瓦共和國（唐努烏梁海）！新增塞北行憲臨時選區！'
+                    : '東北亞簽署停火維持現狀協議，鞏固還都南京新局！';
+              setLastOutcomeBanner(`★ 【東北亞戰報】${summaryText}`);
+              setBbsLog((prev) => [
+                {
+                  id: `nea-win-${Date.now()}`,
+                  round: currentRound.round,
+                  dateLabel: currentRound.dateLabel,
+                  type: '系統',
+                  author: '東北亞聯軍司令部',
+                  text: summaryText,
+                },
+                ...prev,
+              ]);
+              setRoundIndex((prev) => prev + 1);
+              setPhase('PLAYING');
+              return;
+            }
+
+            finishWithEnding(neaEnding, false, bonusSubs);
           }}
         />
       )}
@@ -1012,12 +1193,15 @@ export default function App() {
 
             <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4 font-mono-bbs text-xs">
               {counties.slice(0, tallyRevealCount).map((c) => {
+                const minge = c.current.minge ?? 0;
                 const win =
-                  c.current.kmt >= c.current.dpp && c.current.kmt >= c.current.tpp
-                    ? '藍勝'
-                    : c.current.dpp >= c.current.kmt && c.current.dpp >= c.current.tpp
-                      ? '綠勝'
-                      : '白勝';
+                  minge > c.current.kmt && minge > c.current.dpp && minge > c.current.tpp
+                    ? '民革勝'
+                    : c.current.kmt >= c.current.dpp && c.current.kmt >= c.current.tpp
+                      ? '藍勝'
+                      : c.current.dpp >= c.current.kmt && c.current.dpp >= c.current.tpp
+                        ? '綠勝'
+                        : '白勝';
                 return (
                   <div
                     key={c.id}
@@ -1030,10 +1214,12 @@ export default function App() {
                           ? 'text-blue-400 font-bold'
                           : win === '綠勝'
                             ? 'text-emerald-400 font-bold'
-                            : 'text-cyan-400 font-bold'
+                            : win === '民革勝'
+                              ? 'text-purple-400 font-bold'
+                              : 'text-cyan-400 font-bold'
                       }
                     >
-                      {win} {Math.max(c.current.kmt, c.current.dpp, c.current.tpp).toFixed(1)}%
+                      {win} {Math.max(c.current.kmt, c.current.dpp, c.current.tpp, minge).toFixed(1)}%
                     </span>
                   </div>
                 );
@@ -1046,6 +1232,7 @@ export default function App() {
       {phase === 'GAME_OVER' && activeEnding && (
         <GameOverScreen
           ending={activeEnding}
+          earnedSubEndings={earnedSubEndings}
           faction={activeFaction}
           counties={counties}
           flags={flags}

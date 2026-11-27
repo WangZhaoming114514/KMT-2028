@@ -1,4 +1,10 @@
-export type GamePhase = 'TITLE_MENU' | 'PLAYING' | 'STRAIT_WAR' | 'ELECTION_NIGHT' | 'GAME_OVER';
+export type GamePhase =
+  | 'TITLE_MENU'
+  | 'PLAYING'
+  | 'STRAIT_WAR'
+  | 'NORTHEAST_ASIA_WAR'
+  | 'ELECTION_NIGHT'
+  | 'GAME_OVER';
 
 export type FactionId =
   | 'lu'
@@ -19,6 +25,7 @@ export interface VoteShares {
   kmt: number;
   dpp: number;
   tpp: number;
+  minge?: number;
 }
 
 export interface CountyState {
@@ -128,12 +135,14 @@ export interface BbsLogEntry {
 }
 
 export type EndingCategory = 'VICTORY' | 'DEFEAT' | 'GEOPOLITICAL' | 'MEME_SECRET';
+export type EndingTier = 'MAJOR' | 'SUB';
 
 export interface EndingDefinition {
-  id: number; // 1..30
+  id: number; // 1..40 (15 MAJOR + 25 SUB)
   code: string;
   title: string;
   subtitle: string;
+  tier: EndingTier;
   category: EndingCategory;
   rarity: '常規' | '罕見' | '隱藏政治梗';
   unlockHint: string;

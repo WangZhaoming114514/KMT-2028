@@ -8,7 +8,7 @@ import eastAsiaGeoRaw from '../data/eastAsiaGeo.json';
 import { ALL_CHINA_PROVINCES, CHINA_PROVINCE_THEATERS, ChinaProvinceId } from '../data/chinaProvinces';
 import { CampaignStats, CountyState, FactionLeader } from '../types/game';
 import { bbsAudio } from '../utils/sound';
-import { ChinaTheaterFlag } from './ChinaTheaterFlags';
+import { FullContinentChinaFlag } from './ChinaTheaterFlags';
 
 interface TaiwanCountyProps {
   COUNTYID: string;
@@ -538,7 +538,6 @@ export function StraitWarMiniGame({
       koreaPt: projection([127.2, 35.6]) ?? [555, 25],
       vietnamPt: projection([106.8, 19.6]) ?? [82, 420],
       okinawaPt: projection([127.68, 26.21]) ?? [565, 256],
-      chinaFlagPt: projection([112.2, 27.6]) ?? [208, 220],
     };
   }, [eastAsiaFeatures, taiwanFeatures, targets, seaLanes]);
 
@@ -1065,14 +1064,14 @@ export function StraitWarMiniGame({
             </div>
             <h1 className="mt-0.5 text-lg font-black text-white sm:text-xl">
               {isGuoguangVictory
-                ? '★ 國光計畫大捷！閩南、閩北、廣東、上海＋浙江、南京全數光復翻藍！'
+                ? '★ 國光大捷還都南京！大陸全境青天白日放光芒，金馬併入福建並增設港平寧與六大選區！'
                 : resolvedOutcome === 16
                   ? '★ 香港再光成功！維港重現青天白日，港台選票即將大暴增！'
                   : resolvedOutcome === 17
                     ? '▲ 台北失守！進入〈中華人民共和國台灣省〉（台港同步變紅）'
                     : resolvedOutcome === 18
-                      ? '★ 成功擊退共軍守住台灣與太平島！愛國選票即將大暴增！'
-                      : '部署海軍截斷補給、發動對共信息戰瓦解敵軍士氣，反攻真實省界戰區！'}
+                      ? '★ 成功擊退敵軍守住台灣與太平島！愛國選票即將大暴增！'
+                      : '部署海軍截斷補給、發動對共信息戰瓦解敵軍士氣，反攻五省戰區與光復香港！'}
             </h1>
           </div>
 
@@ -1081,7 +1080,7 @@ export function StraitWarMiniGame({
               軍需 AP：{ap}
             </span>
             <span className="border border-cyan-500/50 bg-[#0B1829] px-2.5 py-1 text-cyan-300 font-bold">
-              共軍補給：{displayCcpSupply}%
+              {isGuoguangVictory ? '大陸政局：0% 徹底瓦解' : `敵軍補給：${displayCcpSupply}%`}
             </span>
             <span className="text-blue-300 font-bold">自由台島：{freeCount}</span>
             <span className="text-red-400 font-bold">
@@ -1104,7 +1103,9 @@ export function StraitWarMiniGame({
                     }
                     className="bg-emerald-600 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-500 cursor-pointer"
                   >
-                    帶著暴增選票＋臨時選區續戰 2028 →
+                    {resolvedOutcome === 15
+                      ? '還都南京續戰 2028（即將迎戰東北亞＆韓戰）→'
+                      : '帶著暴增選票＋臨時選區續戰 2028 →'}
                   </button>
                 )}
                 <button
@@ -1205,67 +1206,65 @@ export function StraitWarMiniGame({
 
               <rect width={SVG_W} height={SVG_H} fill="url(#warSeaGrid)" />
 
-              {/* Seamless Base Countries (Whole China + full Southeast Asia + US-JP-KR Pact!) */}
-              {mapGeo.eaPaths.map((ea) => {
-                const isChina = ea.name === 'China';
-                const isHk = ea.name === 'Hong Kong';
-                const isMacao = ea.name === 'Macao';
-                const isJapan = ea.name === 'Japan';
-                const isSouthKorea = ea.name === 'South Korea';
-                const isSeaNeutral =
-                  ea.name === 'Philippines' ||
-                  ea.name === 'North Korea' ||
-                  ea.name === 'Vietnam' ||
-                  ea.name === 'Laos' ||
-                  ea.name === 'Cambodia' ||
-                  ea.name === 'Thailand' ||
-                  ea.name === 'Myanmar' ||
-                  ea.name === 'Malaysia' ||
-                  ea.name === 'Indonesia' ||
-                  ea.name === 'Brunei' ||
-                  ea.name === 'Singapore';
+              {/* Full-Continent Glowing Flag across Entire Mainland China Landmass */}
+              <FullContinentChinaFlag
+                clipPathId="warChinaMasterClip"
+                svgWidth={SVG_W}
+                svgHeight={SVG_H}
+                cantonRight={250}
+                cantonBottom={200}
+                liberated={isGuoguangVictory}
+                taiwanFallen={isTaiwanLost}
+                opacity={0.94}
+              />
 
-                let fill = '#1E293B';
-                let stroke = '#475569';
+              {/* Seamless Base Countries (Hong Kong & Macao rendered AFTER China clip so Guangdong never obscures HK) */}
+              {mapGeo.eaPaths
+                .filter((ea) => ea.name !== 'Hong Kong' && ea.name !== 'Macao')
+                .map((ea) => {
+                  const isChina = ea.name === 'China';
+                  const isJapan = ea.name === 'Japan';
+                  const isSouthKorea = ea.name === 'South Korea';
+                  const isSeaNeutral =
+                    ea.name === 'Philippines' ||
+                    ea.name === 'North Korea' ||
+                    ea.name === 'Vietnam' ||
+                    ea.name === 'Laos' ||
+                    ea.name === 'Cambodia' ||
+                    ea.name === 'Thailand' ||
+                    ea.name === 'Myanmar' ||
+                    ea.name === 'Malaysia' ||
+                    ea.name === 'Indonesia' ||
+                    ea.name === 'Brunei' ||
+                    ea.name === 'Singapore';
 
-                if (isChina) {
-                  fill = isTaiwanLost ? '#450A0A' : isGuoguangVictory ? '#1D4ED8' : '#3B1117';
-                  stroke = isGuoguangVictory && !isTaiwanLost ? '#FACC15' : '#991B1B';
-                } else if (isHk) {
-                  fill = isTaiwanLost
-                    ? '#9F1239'
-                    : hkProg >= 100 || isGuoguangVictory
-                      ? '#2563EB'
-                      : '#9F1239';
-                  stroke = isTaiwanLost
-                    ? '#FB7185'
-                    : hkProg >= 100 || isGuoguangVictory
-                      ? '#FACC15'
-                      : '#FB7185';
-                } else if (isMacao) {
-                  fill = isTaiwanLost ? '#6B212E' : isGuoguangVictory ? '#2563EB' : '#6B212E';
-                  stroke = isTaiwanLost ? '#FB7185' : isGuoguangVictory ? '#FACC15' : '#FB7185';
-                } else if (isJapan) {
-                  fill = hasUsJpKrPact ? '#132B3E' : '#182430';
-                  stroke = '#38BDF8';
-                } else if (isSouthKorea) {
-                  fill = hasUsJpKrPact ? '#132B3E' : '#1C262B';
-                  stroke = hasUsJpKrPact ? '#38BDF8' : '#4B636E';
-                } else if (isSeaNeutral) {
-                  fill = '#1C262B';
-                  stroke = '#4B636E';
-                }
+                  let fill = '#1E293B';
+                  let stroke = '#475569';
 
-                return (
-                  <path
-                    key={ea.id}
-                    d={ea.d}
-                    fill={fill}
-                    stroke={stroke}
-                    strokeWidth={isHk ? 1.5 : isChina ? 1.0 : 0.75}
-                  />
-                );
-              })}
+                  if (isChina) {
+                    fill = 'none';
+                    stroke = isGuoguangVictory && !isTaiwanLost ? '#FACC15' : '#991B1B';
+                  } else if (isJapan) {
+                    fill = hasUsJpKrPact ? '#132B3E' : '#182430';
+                    stroke = '#38BDF8';
+                  } else if (isSouthKorea) {
+                    fill = hasUsJpKrPact ? '#132B3E' : '#1C262B';
+                    stroke = hasUsJpKrPact ? '#38BDF8' : '#4B636E';
+                  } else if (isSeaNeutral) {
+                    fill = '#1C262B';
+                    stroke = '#4B636E';
+                  }
+
+                  return (
+                    <path
+                      key={ea.id}
+                      d={ea.d}
+                      fill={fill}
+                      stroke={stroke}
+                      strokeWidth={isChina ? 1.1 : 0.75}
+                    />
+                  );
+                })}
 
               {/* Real Natural Earth 10m Provincial Borders + Captured Province Internal Glow */}
               <g clipPath="url(#warChinaMasterClip)">
@@ -1274,92 +1273,108 @@ export function StraitWarMiniGame({
                     key={cp.id}
                     d={cp.d}
                     fill="none"
-                    stroke={isGuoguangVictory && !isTaiwanLost ? '#60A5FA' : '#6A2732'}
+                    stroke={isGuoguangVictory && !isTaiwanLost ? '#93C5FD' : '#6A2732'}
                     strokeWidth="0.65"
-                    strokeOpacity={isGuoguangVictory ? 0.5 : 0.8}
+                    strokeOpacity={isGuoguangVictory ? 0.45 : 0.78}
                     pointerEvents="none"
                   />
                 ))}
 
-                {mapGeo.provincePaths.map((prov) => {
-                  const prog = provinceProgressMap[prov.id];
-                  const captured = !isTaiwanLost && (isGuoguangVictory || prog >= 100);
-                  const partial = !isTaiwanLost && !captured && prog >= 45;
+                {!isGuoguangVictory &&
+                  mapGeo.provincePaths.map((prov) => {
+                    const prog = provinceProgressMap[prov.id];
+                    const captured = !isTaiwanLost && prog >= 100;
+                    const partial = !isTaiwanLost && !captured && prog >= 45;
 
-                  if (captured) {
-                    return (
-                      <g key={prov.id} clipPath={`url(#war-prov-clip-${prov.id})`}>
-                        {prov.paths.map((pd, i) => (
-                          <g key={`${prov.id}-cap-${i}`}>
-                            <path d={pd} fill="#1D4ED8" stroke="#93C5FD" strokeWidth="0.85" />
+                    if (captured) {
+                      return (
+                        <g key={prov.id} clipPath={`url(#war-prov-clip-${prov.id})`}>
+                          {prov.paths.map((pd, i) => (
+                            <g key={`${prov.id}-cap-${i}`}>
+                              <path d={pd} fill="#1D4ED8" stroke="#93C5FD" strokeWidth="0.85" />
+                              <path
+                                d={pd}
+                                fill="none"
+                                stroke="#60A5FA"
+                                strokeWidth="10"
+                                strokeOpacity="0.36"
+                              />
+                              <path
+                                d={pd}
+                                fill="none"
+                                stroke="#BAE6FD"
+                                strokeWidth="2.5"
+                                strokeOpacity="0.7"
+                              />
+                            </g>
+                          ))}
+                        </g>
+                      );
+                    }
+
+                    if (partial) {
+                      return (
+                        <g key={prov.id}>
+                          {prov.paths.map((pd, i) => (
                             <path
+                              key={`${prov.id}-part-${i}`}
                               d={pd}
-                              fill="none"
+                              fill="#1E3A8A"
+                              fillOpacity="0.85"
                               stroke="#60A5FA"
-                              strokeWidth="10"
-                              strokeOpacity="0.36"
+                              strokeWidth="0.85"
+                              strokeDasharray="4 2"
                             />
-                            <path
-                              d={pd}
-                              fill="none"
-                              stroke="#BAE6FD"
-                              strokeWidth="2.5"
-                              strokeOpacity="0.7"
-                            />
-                          </g>
-                        ))}
-                      </g>
-                    );
-                  }
+                          ))}
+                        </g>
+                      );
+                    }
 
-                  if (partial) {
-                    return (
-                      <g key={prov.id}>
-                        {prov.paths.map((pd, i) => (
-                          <path
-                            key={`${prov.id}-part-${i}`}
-                            d={pd}
-                            fill="#1E3A8A"
-                            fillOpacity="0.85"
-                            stroke="#60A5FA"
-                            strokeWidth="0.85"
-                            strokeDasharray="4 2"
-                          />
-                        ))}
-                      </g>
-                    );
-                  }
-
-                  return null;
-                })}
+                    return null;
+                  })}
               </g>
 
-              {/* Outer China Coastline Highlight when Guoguang Complete */}
+              {/* Outer China Coastline Glow when Guoguang Complete */}
               {isGuoguangVictory && !isTaiwanLost &&
                 mapGeo.chinaPaths.map((d, idx) => (
-                  <path
-                    key={`gg-outer-${idx}`}
-                    d={d}
-                    fill="none"
-                    stroke="#FACC15"
-                    strokeWidth="1.35"
-                    pointerEvents="none"
-                  />
+                  <g key={`gg-outer-${idx}`} pointerEvents="none">
+                    <path
+                      d={d}
+                      fill="none"
+                      stroke="#60A5FA"
+                      strokeWidth="5"
+                      strokeOpacity="0.3"
+                    />
+                    <path
+                      d={d}
+                      fill="none"
+                      stroke="#FACC15"
+                      strokeWidth="1.5"
+                    />
+                  </g>
                 ))}
 
-              <ChinaTheaterFlag
-                x={mapGeo.chinaFlagPt[0]}
-                y={mapGeo.chinaFlagPt[1]}
-                width={84}
-                height={56}
-                liberated={isGuoguangVictory}
-                taiwanFallen={isTaiwanLost}
-              />
+              {/* Hong Kong & Macao Rendered Above China Clip */}
+              {mapGeo.eaPaths
+                .filter((ea) => ea.name === 'Hong Kong' || ea.name === 'Macao')
+                .map((ea) => {
+                  const isHk = ea.name === 'Hong Kong';
+                  const blueNow = !isTaiwanLost && (isHk ? hkProg >= 100 || isGuoguangVictory || resolvedOutcome === 16 : isGuoguangVictory);
+                  return (
+                    <path
+                      key={`war-top-${ea.id}`}
+                      d={ea.d}
+                      fill={blueNow ? '#2563EB' : isHk ? '#9F1239' : '#6B212E'}
+                      stroke={blueNow ? '#FACC15' : '#FB7185'}
+                      strokeWidth={isHk ? 1.6 : 1.1}
+                    />
+                  );
+                })}
 
               {/* Allied / Neighbor Labels */}
               <text
-                x={Math.min(SVG_W - 68, mapGeo.koreaPt[0])}
-                y={Math.max(18, mapGeo.koreaPt[1])}
+                x={462}
+                y={22}
                 textAnchor="middle"
                 fill={hasUsJpKrPact ? '#7DD3FC' : '#94A3B8'}
                 fontSize="9"
@@ -1815,7 +1830,7 @@ export function StraitWarMiniGame({
                   對共信息戰可重創共軍士氣並洗爆各省防線；壓低共軍士氣 ≤32% 或補給 ≤45% 可中斷敵軍回防！
                   <br />
                   <strong className="text-blue-300">國光大捷：</strong>
-                  守住台灣（淪陷 ≤8、上限 {TAIWAN_FALL_THRESHOLD}）且光復閩南＋閩北＋廣東＋上海浙江＋南京（或共軍士氣 ≤15%），五省與香港臨時選區即全面開票！
+                  守住台灣（淪陷 ≤8、上限 {TAIWAN_FALL_THRESHOLD}）且光復閩南＋閩北＋廣東＋上海浙江＋南京（或共軍士氣 ≤15%），即還都南京！金門連江併入福建，改設香港・北平・南京與六大地理區，隨後更將觸發〈東北亞暨漠北決戰〉！
                 </p>
 
                 {!resolvedOutcome && infoWarUnitInHand && (
