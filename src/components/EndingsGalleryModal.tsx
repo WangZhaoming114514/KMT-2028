@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Lock, CheckCircle2 } from 'lucide-react';
+import { X, Lock, CheckCircle2, CornerDownRight } from 'lucide-react';
 import { ENDINGS } from '../data/endings';
 import { EndingCategory } from '../types/game';
 
@@ -12,8 +12,8 @@ type FilterTab = 'ALL' | 'MAJOR' | 'SUB' | EndingCategory;
 
 const FILTER_LABELS: Array<{ id: FilterTab; label: string }> = [
   { id: 'ALL', label: '全部結局 (40)' },
-  { id: 'MAJOR', label: '大結局・2028總統大選 (15)' },
-  { id: 'SUB', label: '子結局・領土與支線 (25)' },
+  { id: 'MAJOR', label: '主要大結局 (15)' },
+  { id: 'SUB', label: '附屬子結局 (25)' },
   { id: 'VICTORY', label: '勝選執政 (8)' },
   { id: 'DEFEAT', label: '敗選檢討 (6)' },
   { id: 'GEOPOLITICAL', label: '大陸／北疆／地緣 (11)' },
@@ -37,6 +37,17 @@ export function EndingsGalleryModal({ unlockedMap, onClose }: EndingsGalleryModa
   const activeEnding = ENDINGS.find((e) => e.id === selectedId) ?? ENDINGS[0];
   const isUnlocked = Boolean(unlockedMap[activeEnding.id]);
 
+  const childSubs =
+    activeEnding.tier === 'MAJOR'
+      ? ENDINGS.filter(
+          (e) => e.tier === 'SUB' && e.relatedMajorIds?.includes(activeEnding.id)
+        )
+      : [];
+  const parentMajors =
+    activeEnding.tier === 'SUB' && activeEnding.relatedMajorIds
+      ? ENDINGS.filter((e) => activeEnding.relatedMajorIds?.includes(e.id))
+      : [];
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
@@ -50,7 +61,7 @@ export function EndingsGalleryModal({ unlockedMap, onClose }: EndingsGalleryModa
           <div className="flex flex-wrap items-baseline gap-3">
             <h2 className="text-lg font-bold text-white">KUOMINTANG 2028 歷史結局圖鑑</h2>
             <span className="font-mono-bbs text-xs text-amber-300">
-              總解鎖 {unlockedCount} / 40（大結局 {unlockedMajorCount}/15 · 子結局 {unlockedSubCount}/25）
+              總解鎖 {unlockedCount} / 40（主要大結局 {unlockedMajorCount}/15 · 附屬子結局 {unlockedSubCount}/25）
             </span>
           </div>
           <button
@@ -94,12 +105,15 @@ export function EndingsGalleryModal({ unlockedMap, onClose }: EndingsGalleryModa
               {filtered.map((ending) => {
                 const done = Boolean(unlockedMap[ending.id]);
                 const active = ending.id === selectedId;
+                const isSub = ending.tier === 'SUB';
                 return (
                   <button
                     key={ending.id}
                     type="button"
                     onClick={() => setSelectedId(ending.id)}
                     className={`flex items-center justify-between gap-3 border px-3.5 py-2.5 text-left transition-colors cursor-pointer ${
+                      isSub ? 'ml-3 border-l-2 border-l-purple-500/80' : ''
+                    } ${
                       active
                         ? 'border-blue-500 bg-[#132038]'
                         : 'border-[#243044] bg-[#101622] hover:border-slate-500'
@@ -107,15 +121,16 @@ export function EndingsGalleryModal({ unlockedMap, onClose }: EndingsGalleryModa
                   >
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2 font-mono-bbs text-[11px] text-slate-400">
+                        {isSub && <CornerDownRight className="h-3 w-3 text-purple-400 shrink-0" />}
                         <span>{ending.code}</span>
                         <span
                           className={`px-1.5 py-0.5 text-[10px] font-bold ${
-                            ending.tier === 'MAJOR'
+                            !isSub
                               ? 'bg-amber-950/90 text-amber-300 border border-amber-500/60'
                               : 'bg-purple-950/90 text-purple-300 border border-purple-500/60'
                           }`}
                         >
-                          {ending.tier === 'MAJOR' ? '大結局' : '子結局'}
+                          {!isSub ? '大結局' : '附屬子結局'}
                         </span>
                         <span
                           className={
@@ -132,6 +147,11 @@ export function EndingsGalleryModal({ unlockedMap, onClose }: EndingsGalleryModa
                       <div className="mt-0.5 truncate text-sm font-bold text-white">
                         {done ? ending.title : '？？？ 尚未解鎖結局'}
                       </div>
+                      {isSub && ending.attachedTo && (
+                        <div className="mt-0.5 truncate text-[11px] text-purple-300/80">
+                          {ending.attachedTo}
+                        </div>
+                      )}
                     </div>
                     {done ? (
                       <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
@@ -156,14 +176,36 @@ export function EndingsGalleryModal({ unlockedMap, onClose }: EndingsGalleryModa
                     : 'bg-purple-950/80 text-purple-300 border border-purple-500/60'
                 }`}
               >
-                {activeEnding.tier === 'MAJOR' ? '大結局（2028總統大選主線）' : '子結局（領土／支線成就）'}
+                {activeEnding.tier === 'MAJOR'
+                  ? '主要大結局（2028總統大選主線）'
+                  : '附屬子結局（掛載於主要大結局下）'}
               </span>
               <span>·</span>
               <span>{activeEnding.rarity}</span>
             </div>
 
+            {activeEnding.tier === 'SUB' && activeEnding.attachedTo && (
+              <div className="mt-3 border border-purple-700/70 bg-[#150E26] px-3 py-2 text-xs text-purple-200">
+                <div className="font-bold text-purple-300">↳ {activeEnding.attachedTo}</div>
+                {parentMajors.length > 0 && (
+                  <div className="mt-1.5 flex flex-wrap gap-1.5">
+                    {parentMajors.map((pm) => (
+                      <button
+                        key={pm.id}
+                        type="button"
+                        onClick={() => setSelectedId(pm.id)}
+                        className="border border-amber-500/50 bg-[#1C140A] px-2 py-0.5 font-mono-bbs text-[10px] text-amber-300 hover:border-amber-400 cursor-pointer"
+                      >
+                        {pm.code} {unlockedMap[pm.id] ? pm.title.slice(0, 10) + '…' : '主要結局'}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
             {isUnlocked ? (
-              <div className="mt-2">
+              <div className="mt-3">
                 <h3 className="text-xl font-black text-white">{activeEnding.title}</h3>
                 <p className="mt-1 text-sm text-blue-400 font-medium">{activeEnding.subtitle}</p>
 
@@ -204,7 +246,7 @@ export function EndingsGalleryModal({ unlockedMap, onClose }: EndingsGalleryModa
                 </div>
               </div>
             ) : (
-              <div className="mt-6 border border-[#243044] bg-[#101622] p-6">
+              <div className="mt-4 border border-[#243044] bg-[#101622] p-6">
                 <div className="flex items-center gap-2 text-slate-400 text-sm font-bold">
                   <Lock className="h-4 w-4" />
                   <span>此結局尚未解鎖</span>
@@ -213,6 +255,26 @@ export function EndingsGalleryModal({ unlockedMap, onClose }: EndingsGalleryModa
                   <span className="text-amber-300 font-semibold">解鎖線索：</span>
                   {activeEnding.unlockHint}
                 </p>
+              </div>
+            )}
+
+            {activeEnding.tier === 'MAJOR' && childSubs.length > 0 && (
+              <div className="mt-5 border-t border-[#243044] pt-4">
+                <div className="text-xs font-bold text-purple-300">
+                  🔗 可附屬於此大結局之子結局（{childSubs.length} 項）
+                </div>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {childSubs.map((sub) => (
+                    <button
+                      key={sub.id}
+                      type="button"
+                      onClick={() => setSelectedId(sub.id)}
+                      className="border border-purple-700/70 bg-[#140E24] px-2.5 py-1 text-left font-mono-bbs text-[11px] text-purple-200 hover:border-purple-400 cursor-pointer"
+                    >
+                      {sub.code} {unlockedMap[sub.id] ? sub.title.slice(0, 14) + '…' : '未解鎖子結局'}
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
           </div>

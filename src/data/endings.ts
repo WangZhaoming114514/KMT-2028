@@ -120,6 +120,24 @@ export function evaluateFinalEnding(ctx: GameEvaluationContext): EndingDefinitio
 }
 
 /**
+ * Since all 25 SUB endings are subordinate to the 15 MAJOR endings, any mid-game collapse
+ * or standalone war settlement resolves its parent MAJOR ending and attaches the SUB ending(s).
+ */
+export function evaluateFallbackMajorForSub(
+  ctx: GameEvaluationContext,
+  triggeredSubId: number
+): EndingDefinition {
+  const find = (id: number) => ENDINGS.find((e) => e.id === id)!;
+  if (triggeredSubId === 17) {
+    return find(11);
+  }
+  if (triggeredSubId === 26 || triggeredSubId === 29) {
+    return find(11);
+  }
+  return evaluateFinalEnding(ctx);
+}
+
+/**
  * Collect all earned SUB endings (territorial achievements, geopolitical side-fates, & election memes)
  * unlocked alongside the 2028 Election MAJOR Ending.
  */

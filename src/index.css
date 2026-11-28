@@ -56,24 +56,24 @@
 
 @keyframes nanjingMapFocusPan {
   0% {
-    transform: translate(0%, 0%) scale(1);
+    transform: scale(1);
   }
-  25% {
-    transform: translate(-1%, 10%) scale(1.75);
+  26% {
+    transform: scale(1.36);
   }
-  72% {
-    transform: translate(-1%, 11%) scale(1.88);
+  74% {
+    transform: scale(1.42);
   }
   100% {
-    transform: translate(0%, 0%) scale(1);
+    transform: scale(1);
   }
 }
 
 @keyframes nanjingCalligraphyFade {
   0% {
     opacity: 0;
-    transform: scale(1.12) translateY(8px);
-    letter-spacing: 0.35em;
+    transform: scale(1.08) translateY(6px);
+    letter-spacing: 0.3em;
   }
   22% {
     opacity: 1;
@@ -93,13 +93,15 @@
 }
 
 .animate-nanjing-pan {
-  transform-origin: 49% 8%;
-  animation: nanjingMapFocusPan 5.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  transform-box: view-box;
+  transform-origin: 335px 52px;
+  will-change: transform;
+  animation: nanjingMapFocusPan 4.6s cubic-bezier(0.22, 1, 0.36, 1) 1 forwards;
 }
 
 .animate-nanjing-calligraphy {
   font-family: 'BiauKai', 'DFKai-SB', 'KaiTi', 'Noto Serif TC', 'PMingLiU', serif;
-  animation: nanjingCalligraphyFade 5.6s ease-in-out forwards;
+  animation: nanjingCalligraphyFade 4.6s ease-in-out 1 forwards;
 }
 
 @media (prefers-reduced-motion: reduce) {

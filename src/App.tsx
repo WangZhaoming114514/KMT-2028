@@ -20,6 +20,7 @@ import {
   ENDINGS,
   checkMidGameEnding,
   evaluateEarnedSubEndings,
+  evaluateFallbackMajorForSub,
   evaluateFinalEnding,
   loadUnlockedEndings,
   saveUnlockedEndings,
@@ -76,6 +77,7 @@ export default function App() {
   const [warAlreadyFought, setWarAlreadyFought] = useState<boolean>(false);
   const [warLaunchedFromTitle, setWarLaunchedFromTitle] = useState<boolean>(false);
   const [warOccupiedCounties, setWarOccupiedCounties] = useState<string[] | undefined>(undefined);
+  const [nanjingIntroPlayed, setNanjingIntroPlayed] = useState<boolean>(false);
   const [feedTab, setFeedTab] = useState<'THREADS' | 'PTT'>('THREADS');
 
   const activeFaction = useMemo(
@@ -121,6 +123,7 @@ export default function App() {
       setWarAlreadyFought(false);
       setWarLaunchedFromTitle(false);
       setWarOccupiedCounties(undefined);
+      setNanjingIntroPlayed(false);
       setBbsLog([
         {
           id: 'init-0',
@@ -145,6 +148,7 @@ export default function App() {
     setWarAlreadyFought(true);
     setWarLaunchedFromTitle(true);
     setWarOccupiedCounties(undefined);
+    setNanjingIntroPlayed(false);
     setPhase('STRAIT_WAR');
   }, [activeFaction]);
 
@@ -160,6 +164,7 @@ export default function App() {
     setWarAlreadyFought(true);
     setWarLaunchedFromTitle(true);
     setWarOccupiedCounties(undefined);
+    setNanjingIntroPlayed(false);
     setPhase('NORTHEAST_ASIA_WAR');
   }, [activeFaction]);
 
@@ -306,7 +311,17 @@ export default function App() {
           });
 
       if (midEnding) {
-        finishWithEnding(midEnding, false);
+        const evalCtx = {
+          factionId: activeFaction.id,
+          round: currentRound.round,
+          stats: nextStats,
+          nationalShares: nextNational,
+          counties: nextCounties,
+          flags: nextFlags,
+          midGameTrigger: true,
+        };
+        const parentMajor = evaluateFallbackMajorForSub(evalCtx, midEnding.id);
+        finishWithEnding(parentMajor, false, [midEnding]);
         return;
       }
 
@@ -918,6 +933,8 @@ export default function App() {
                   bbsAudio.playKeyClick();
                   setMapMode(m);
                 }}
+                shouldAutoPlayNanjing={!nanjingIntroPlayed}
+                onNanjingAnimDone={() => setNanjingIntroPlayed(true)}
               />
 
               {/* Compact Quick Grid for 22 Counties + Temporary Constitutional Districts */}
@@ -1013,6 +1030,8 @@ export default function App() {
               addedFlags.push('hk_restoration', 'war_hk_victory');
             } else if (endingId === 18) {
               addedFlags.push('war_defense_victory');
+            } else if (endingId === 17) {
+              addedFlags.push('taiwan_fallen');
             }
 
             if (endingId !== 17) {
@@ -1036,16 +1055,13 @@ export default function App() {
                   };
             setStats(nextStats);
 
-            const warEnding = ENDINGS.find((e) => e.id === endingId) ?? ENDINGS[14];
-            const bonusSubs: EndingDefinition[] = [];
+            const warSubEnding = ENDINGS.find((e) => e.id === endingId) ?? ENDINGS[14];
+            const bonusSubs: EndingDefinition[] = [warSubEnding];
             if (endingId === 15 && capturedHk) {
               const hkEnd = ENDINGS.find((e) => e.id === 16);
               if (hkEnd) bonusSubs.push(hkEnd);
             }
-            const updatedUnlocked = saveUnlockedEndings([
-              warEnding.id,
-              ...bonusSubs.map((s) => s.id),
-            ]);
+            const updatedUnlocked = saveUnlockedEndings(bonusSubs.map((s) => s.id));
             setUnlockedMap(updatedUnlocked);
 
             if (
@@ -1063,7 +1079,7 @@ export default function App() {
 
               bbsAudio.playElectionFanfare(true);
               setLastOutcomeBanner(
-                `★ 【台海勝利戰報】${warEnding.title}！台灣各縣市藍營選票大暴增，且${districtLabel}（此戰役領土子結局已收入圖鑑，繼續衝刺 2028 大選！）`
+                `★ 【台海勝利戰報】${warSubEnding.title}！台灣各縣市藍營選票大暴增，且${districtLabel}（此戰役領土子結局已附屬收錄，繼續衝刺 2028 大選！）`
               );
               setBbsLog((prev) => [
                 {
@@ -1081,7 +1097,20 @@ export default function App() {
               return;
             }
 
-            finishWithEnding(warEnding, false, bonusSubs);
+            // Sub-endings always attach under a MAJOR ending!
+            const parentMajor = evaluateFallbackMajorForSub(
+              {
+                factionId: activeFaction.id,
+                round: currentRound.round,
+                stats: nextStats,
+                nationalShares: computeNationalShares(updatedCounties),
+                counties: updatedCounties,
+                flags: nextFlags,
+                midGameTrigger: false,
+              },
+              endingId
+            );
+            finishWithEnding(parentMajor, false, bonusSubs);
           }}
         />
       )}
@@ -1126,20 +1155,17 @@ export default function App() {
             };
             setStats(nextStats);
 
-            const neaEnding = ENDINGS.find((e) => e.id === endingId) ?? ENDINGS[30];
-            const bonusSubs: EndingDefinition[] = [];
+            const neaSubEnding = ENDINGS.find((e) => e.id === endingId) ?? ENDINGS[30];
+            const bonusSubs: EndingDefinition[] = [neaSubEnding];
             if (meta.saibeiRecovered) {
               const tuvaSub = ENDINGS.find((e) => e.id === 34);
               const mobeiSub = ENDINGS.find((e) => e.id === 32);
-              if (mobeiSub && mobeiSub.id !== neaEnding.id) bonusSubs.push(mobeiSub);
+              if (mobeiSub && mobeiSub.id !== neaSubEnding.id) bonusSubs.push(mobeiSub);
               if (tuvaSub) bonusSubs.push(tuvaSub);
             }
             const guoSub = ENDINGS.find((e) => e.id === 15);
             if (guoSub) bonusSubs.push(guoSub);
-            const updatedUnlocked = saveUnlockedEndings([
-              neaEnding.id,
-              ...bonusSubs.map((s) => s.id),
-            ]);
+            const updatedUnlocked = saveUnlockedEndings(bonusSubs.map((s) => s.id));
             setUnlockedMap(updatedUnlocked);
 
             if (
@@ -1170,7 +1196,20 @@ export default function App() {
               return;
             }
 
-            finishWithEnding(neaEnding, false, bonusSubs);
+            // Attach NEA territorial sub-endings under the parent 2028 Election MAJOR ending
+            const parentMajor = evaluateFallbackMajorForSub(
+              {
+                factionId: activeFaction.id,
+                round: currentRound.round,
+                stats: nextStats,
+                nationalShares: computeNationalShares(updatedCounties),
+                counties: updatedCounties,
+                flags: nextFlags,
+                midGameTrigger: false,
+              },
+              endingId
+            );
+            finishWithEnding(parentMajor, false, bonusSubs);
           }}
         />
       )}

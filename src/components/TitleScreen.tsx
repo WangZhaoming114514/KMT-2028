@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
-import { Volume2, VolumeX, BookOpen, Play } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Volume2, VolumeX, BookOpen, Play, Download } from 'lucide-react';
 import { FACTION_LEADERS } from '../data/factions';
 import { FactionId } from '../types/game';
 import { PortraitAvatar } from './PortraitAvatar';
@@ -41,6 +41,47 @@ export function TitleScreen({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onStartGame]);
 
+  const [downloadingHtml, setDownloadingHtml] = useState(false);
+
+  const handleDownloadStandaloneHtml = async () => {
+    if (downloadingHtml) return;
+    setDownloadingHtml(true);
+    try {
+      // Check if we're already running from an inlined single-file HTML build
+      const hasInlineModuleScript = Array.from(document.querySelectorAll('script[type="module"]')).some(
+        (s) => !s.getAttribute('src') && (s.textContent?.length ?? 0) > 1000
+      );
+
+      let blob: Blob;
+      if (hasInlineModuleScript) {
+        const clone = document.documentElement.cloneNode(true) as HTMLElement;
+        const rootEl = clone.querySelector('#root');
+        if (rootEl) rootEl.innerHTML = '';
+        blob = new Blob(['<!doctype html>\n' + clone.outerHTML], {
+          type: 'text/html;charset=utf-8',
+        });
+      } else {
+        const resp = await fetch('/kuomintang-2028-standalone.html');
+        if (!resp.ok) throw new Error('HTML package endpoint unavailable');
+        const text = await resp.text();
+        blob = new Blob([text], { type: 'text/html;charset=utf-8' });
+      }
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'kuomintang-2028-standalone.html';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.setTimeout(() => URL.revokeObjectURL(url), 1500);
+    } catch {
+      // Ignore silent failures if browser blocks synthetic downloads
+    } finally {
+      setDownloadingHtml(false);
+    }
+  };
+
   const activeLeader =
     FACTION_LEADERS.find((f) => f.id === selectedFaction) ?? FACTION_LEADERS[0];
 
@@ -59,6 +100,16 @@ export function TitleScreen({
         </div>
 
         <div className="flex items-center gap-3 shrink-0">
+          <button
+            type="button"
+            onClick={handleDownloadStandaloneHtml}
+            disabled={downloadingHtml}
+            className="flex items-center gap-1.5 border border-emerald-700/70 bg-[#0D1E1A] px-3 py-2 text-xs font-medium text-emerald-300 hover:border-emerald-400 hover:text-white transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+          >
+            <Download className="h-3.5 w-3.5" />
+            <span>{downloadingHtml ? '打包中…' : '下載單檔 HTML'}</span>
+          </button>
+
           <button
             type="button"
             onClick={onOpenGallery}
@@ -99,7 +150,7 @@ export function TitleScreen({
               </p>
 
               <p className="mt-3 text-xs leading-relaxed text-slate-300">
-                本作為「2028 台灣總統大選模擬器」！從 9 位真實國民黨派系強權中擇一披掛上陣，經歷二十四回合脆與 PTT 選戰攻防。主線決定 <strong>15 個大結局</strong>，沿途觸發釣魚島、國光反攻、香港再光、圖瓦共和國／漠北與清代外東北戰線或政治迷因則額外解鎖 <strong>25 個子結局</strong>，共計 40 種歷史結局！
+                本作為「2028 台灣總統大選模擬器」！從 9 位真實國民黨派系強權中擇一披掛上陣，經歷二十四回合脆與 PTT 選戰攻防。主線決定 <strong>15 個主要大結局</strong>，而釣魚島、國光反攻、香港再光、圖瓦共和國／漠北與清代外東北領土戰線或政治迷因，則作為 <strong>25 個附屬子結局</strong> 掛載於大結局之下，共計 40 種歷史結局！
               </p>
 
               <div className="mt-4 border-t border-[#243044] pt-3 text-xs text-slate-400 space-y-1.5">

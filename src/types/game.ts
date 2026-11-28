@@ -143,6 +143,8 @@ export interface EndingDefinition {
   title: string;
   subtitle: string;
   tier: EndingTier;
+  attachedTo?: string;
+  relatedMajorIds?: number[];
   category: EndingCategory;
   rarity: '常規' | '罕見' | '隱藏政治梗';
   unlockHint: string;

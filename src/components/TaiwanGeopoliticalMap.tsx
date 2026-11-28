@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { geoMercator, geoPath } from 'd3-geo';
 import * as topojson from 'topojson-client';
 import type { Topology, GeometryCollection } from 'topojson-specification';
@@ -31,6 +31,8 @@ interface TaiwanGeopoliticalMapProps {
   onChangeMapMode: (mode: MapMode) => void;
   endingId?: number;
   warOccupiedCounties?: string[];
+  shouldAutoPlayNanjing?: boolean;
+  onNanjingAnimDone?: () => void;
 }
 
 function getCountyFill(
@@ -73,11 +75,14 @@ export function TaiwanGeopoliticalMap({
   onChangeMapMode,
   endingId,
   warOccupiedCounties,
+  shouldAutoPlayNanjing = false,
+  onNanjingAnimDone,
 }: TaiwanGeopoliticalMapProps) {
   const [hoveredCountyId, setHoveredCountyId] = useState<string | null>(null);
-  const [nanjingReplayKey, setNanjingReplayKey] = useState<number>(0);
+  const [isNanjingFocusing, setIsNanjingFocusing] = useState<boolean>(false);
+  const autoPlayedRef = useRef<boolean>(false);
 
-  const taiwanFallen = endingId === 17;
+  const taiwanFallen = endingId === 17 || flags.includes('taiwan_fallen');
   const guoguangVictory =
     !taiwanFallen &&
     (flags.includes('guoguang_victory') ||
@@ -94,6 +99,31 @@ export function TaiwanGeopoliticalMap({
       flags.includes('war_defense_victory'));
   const guoguangActive =
     !taiwanFallen && flags.includes('guoguang_restarted') && !guoguangVictory;
+
+  // Trigger Return-to-Nanjing zoom/pan animation ONCE when enabled, never jumping on hover/mode/remount
+  useEffect(() => {
+    if (guoguangVictory && mapMode === 'REGIONAL' && shouldAutoPlayNanjing && !autoPlayedRef.current) {
+      autoPlayedRef.current = true;
+      setIsNanjingFocusing(true);
+    }
+  }, [guoguangVictory, mapMode, shouldAutoPlayNanjing]);
+
+  useEffect(() => {
+    if (!isNanjingFocusing) return;
+    const timer = window.setTimeout(() => {
+      setIsNanjingFocusing(false);
+      onNanjingAnimDone?.();
+    }, 4650);
+    return () => window.clearTimeout(timer);
+  }, [isNanjingFocusing, onNanjingAnimDone]);
+
+  useEffect(() => {
+    if (mapMode !== 'REGIONAL' && isNanjingFocusing) {
+      setIsNanjingFocusing(false);
+      onNanjingAnimDone?.();
+    }
+  }, [mapMode, isNanjingFocusing, onNanjingAnimDone]);
+
   const countyLookup = useMemo(() => {
     const map = new Map<string, CountyState>();
     for (const c of counties) map.set(c.id, c);
@@ -415,10 +445,10 @@ export function TaiwanGeopoliticalMap({
           {guoguangVictory && mapMode === 'REGIONAL' && (
             <button
               type="button"
-              onClick={() => setNanjingReplayKey((k) => k + 1)}
+              onClick={() => setIsNanjingFocusing(true)}
               className="border border-amber-400/70 bg-blue-950/80 px-2 py-0.5 font-mono-bbs text-[10px] font-bold text-amber-200 hover:bg-blue-900 cursor-pointer"
             >
-              重播還都南京聚焦
+              {isNanjingFocusing ? '聚焦南京中…' : '重播還都南京聚焦'}
             </button>
           )}
         </div>
@@ -591,10 +621,7 @@ export function TaiwanGeopoliticalMap({
             ))}
           </defs>
 
-          <g
-            key={guoguangVictory ? `nanjing-cam-${nanjingReplayKey}` : 'cam-static'}
-            className={guoguangVictory && mapMode === 'REGIONAL' ? 'animate-nanjing-pan' : undefined}
-          >
+          <g className={isNanjingFocusing && mapMode === 'REGIONAL' ? 'animate-nanjing-pan' : undefined}>
             <rect width={SVG_W} height={SVG_H} fill="url(#seaGrid)" />
 
             {/* Full-Continent Glowing Flag across Entire Mainland China Landmass */}
@@ -1282,7 +1309,8 @@ export function TaiwanGeopoliticalMap({
               const cState = countyLookup.get(lookupId);
               const isSelected = selectedCountyId === lookupId;
               const isHovered = hoveredCountyId === lookupId;
-              const fill = getCountyFill(cState, endingId, warOccupiedSet, warCcpDefeated);
+              const effectiveEndingId = taiwanFallen ? 17 : endingId;
+              const fill = getCountyFill(cState, effectiveEndingId, warOccupiedSet, warCcpDefeated);
 
               return (
                 <path
@@ -1344,7 +1372,7 @@ export function TaiwanGeopoliticalMap({
                     </text>
                     <path
                       d={inset.path}
-                      fill={getCountyFill(cState, endingId, warOccupiedSet, warCcpDefeated)}
+                      fill={getCountyFill(cState, taiwanFallen ? 17 : endingId, warOccupiedSet, warCcpDefeated)}
                       stroke={isSelected ? '#FACC15' : '#0B1220'}
                       strokeWidth={1}
                     />
@@ -1498,11 +1526,8 @@ export function TaiwanGeopoliticalMap({
         </svg>
 
         {/* Return to Nanjing Calligraphic Overlay */}
-        {guoguangVictory && mapMode === 'REGIONAL' && (
-          <div
-            key={`callig-${nanjingReplayKey}`}
-            className="animate-nanjing-calligraphy pointer-events-none absolute inset-0 flex flex-col items-center justify-center"
-          >
+        {isNanjingFocusing && guoguangVictory && mapMode === 'REGIONAL' && (
+          <div className="animate-nanjing-calligraphy pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
             <div className="border-2 border-amber-300/90 bg-[#0A1936]/85 px-7 py-4 shadow-[0_0_40px_rgba(37,99,235,0.65)] backdrop-blur-[2px] text-center">
               <div className="font-mono-bbs text-[11px] tracking-[0.28em] text-amber-300">
                 中華民國國民政府

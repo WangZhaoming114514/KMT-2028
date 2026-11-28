@@ -52,20 +52,30 @@ export function GameOverScreen({
   const [selectedCountyId, setSelectedCountyId] = useState<string>(faction.homeCounty);
   const [mapMode, setMapMode] = useState<MapMode>('REGIONAL');
 
+  const subIds = new Set(earnedSubEndings.map((s) => s.id));
+  const taiwanFallen =
+    ending.id === 17 || subIds.has(17) || flags.includes('taiwan_fallen');
   const isVictory =
-    ending.category === 'VICTORY' ||
-    ending.id === 15 ||
-    ending.id === 16 ||
-    ending.id === 18 ||
-    ending.id === 31 ||
-    ending.id === 32 ||
-    ending.id === 33;
+    !taiwanFallen &&
+    (ending.category === 'VICTORY' ||
+      ending.id === 25 ||
+      subIds.has(15) ||
+      subIds.has(16) ||
+      subIds.has(18));
   const mainlandUnified =
-    ending.id === 15 ||
-    ending.id === 31 ||
-    ending.id === 32 ||
-    ending.id === 33 ||
-    flags.includes('guoguang_victory');
+    !taiwanFallen &&
+    (subIds.has(15) ||
+      subIds.has(31) ||
+      subIds.has(32) ||
+      subIds.has(33) ||
+      flags.includes('guoguang_victory'));
+  const warCcpDefeated =
+    !taiwanFallen &&
+    (mainlandUnified ||
+      subIds.has(16) ||
+      subIds.has(18) ||
+      flags.includes('war_hk_victory') ||
+      flags.includes('war_defense_victory'));
   const tempDistricts = counties.filter((c) => c.isTemporary);
   const mingeShare = nationalShares.minge ?? 0;
   const safeSelectedCountyId = counties.some((c) => c.id === selectedCountyId)
@@ -195,26 +205,32 @@ export function GameOverScreen({
                     </div>
                     <div>
                       <div className="text-slate-500">
-                        {mainlandUnified
-                          ? '大陸政局'
-                          : ending.id === 16 || ending.id === 18
-                            ? '台海戰況'
-                            : '中共壓力'}
+                        {taiwanFallen
+                          ? '台海防線'
+                          : mainlandUnified
+                            ? '大陸政局'
+                            : warCcpDefeated
+                              ? '台海戰況'
+                              : '中共壓力'}
                       </div>
                       <div
                         className={`mt-0.5 text-sm font-bold ${
-                          mainlandUnified
-                            ? 'text-blue-400'
-                            : ending.id === 16 || ending.id === 18
-                              ? 'text-cyan-300'
-                              : 'text-rose-400'
+                          taiwanFallen
+                            ? 'text-red-400'
+                            : mainlandUnified
+                              ? 'text-blue-400'
+                              : warCcpDefeated
+                                ? 'text-cyan-300'
+                                : 'text-rose-400'
                         }`}
                       >
-                        {mainlandUnified
-                          ? '還都南京(0%)'
-                          : ending.id === 16 || ending.id === 18
-                            ? '0% 敵軍潰敗'
-                            : `${stats.ccpTension}%`}
+                        {taiwanFallen
+                          ? '全境淪陷'
+                          : mainlandUnified
+                            ? '還都南京(0%)'
+                            : warCcpDefeated
+                              ? '0% 敵軍潰敗'
+                              : `${stats.ccpTension}%`}
                       </div>
                     </div>
                     <div>
@@ -259,28 +275,36 @@ export function GameOverScreen({
                 </div>
               )}
 
-              {/* Earned SUB Endings Showcase (Territorial + Political Meme Achievements) */}
+              {/* Attached SUB Endings Showcase (Subordinate to the Major Ending) */}
               {earnedSubEndings.length > 0 && (
                 <div className="mt-4 border border-purple-700/70 bg-[#150E26] p-4">
                   <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-bold text-purple-300">
-                    <span>★ 同步解鎖之子結局（大陸／北疆領土 ＆ 支線成就）</span>
+                    <span>🔗 附屬於本大結局之子結局（大陸／北疆領土 ＆ 支線結果）</span>
                     <span className="font-mono-bbs text-amber-300">
-                      +{earnedSubEndings.length} 個子結局已收入圖鑑
+                      共 {earnedSubEndings.length} 個附屬子結局已解鎖
                     </span>
                   </div>
-                  <div className="mt-2.5 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  <div className="mt-2.5 grid grid-cols-1 gap-2.5">
                     {earnedSubEndings.map((sub) => (
                       <div
                         key={sub.id}
-                        className="border border-purple-800/80 bg-[#0D0A18] p-2.5 text-xs"
+                        className="border border-purple-800/80 bg-[#0D0A18] p-3 text-xs"
                       >
-                        <div className="flex items-center justify-between font-mono-bbs text-[10px] text-purple-300">
-                          <span>{sub.code} · 子結局</span>
+                        <div className="flex flex-wrap items-center justify-between gap-2 font-mono-bbs text-[10px] text-purple-300">
+                          <span>
+                            ↳ {sub.code} · 附屬子結局
+                            {sub.attachedTo ? `（${sub.attachedTo}）` : ''}
+                          </span>
                           <span className="text-amber-300">{sub.rarity}</span>
                         </div>
-                        <div className="mt-1 font-bold text-white leading-snug">{sub.title}</div>
-                        <p className="mt-1 text-[11px] text-slate-300 leading-snug">
+                        <div className="mt-1 text-sm font-bold text-white leading-snug">
+                          {sub.title}
+                        </div>
+                        <p className="mt-0.5 text-[11px] font-medium text-blue-300 leading-snug">
                           {sub.subtitle}
+                        </p>
+                        <p className="mt-1.5 text-[11px] text-slate-300 leading-relaxed">
+                          {sub.epilogue}
                         </p>
                       </div>
                     ))}
